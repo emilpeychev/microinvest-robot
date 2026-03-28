@@ -237,39 +237,49 @@ def run(base_dir: Path, client_name: str, dry_run: bool = False) -> int:
         write_log(log_file, f"{now_str()} No files found / Няма файлове в {incoming_dir}")
         return 0
 
+    processed_count = 0
     for source in files:
-        result = process_file(source, client_name, processed_dir, review_dir, unsupported_dir)
+        try:
+            result = process_file(source, client_name, processed_dir, review_dir, unsupported_dir)
 
-        write_log(
-            log_file,
-            (
-                f"{now_str()} Classified {source.name} as {result.doc_type} "
-                f"/ Класифициран {source.name} като {result.doc_type} "
-                f"(reason/причина={result.reason})"
-            ),
-        )
-        write_log(
-            log_file,
-            (
-                f"{now_str()} Renamed / Преименуван {source.name} -> {result.destination.name}"
-            ),
-        )
+            write_log(
+                log_file,
+                (
+                    f"{now_str()} Classified {source.name} as {result.doc_type} "
+                    f"/ Класифициран {source.name} като {result.doc_type} "
+                    f"(reason/причина={result.reason})"
+                ),
+            )
+            write_log(
+                log_file,
+                (
+                    f"{now_str()} Renamed / Преименуван {source.name} -> {result.destination.name}"
+                ),
+            )
 
-        if dry_run:
-            write_log(log_file, f"{now_str()} Dry-run: move skipped / Тестов режим: преместването е пропуснато за {source.name}")
-            continue
+            if dry_run:
+                write_log(log_file, f"{now_str()} Dry-run: move skipped / Тестов режим: преместването е пропуснато за {source.name}")
+                processed_count += 1
+                continue
 
-        shutil.move(str(source), str(result.destination))
-        if result.doc_type in {"invoice", "receipt", "bank"}:
-            target_bucket = "01_Processed"
-        elif result.reason == "unsupported-extension":
-            target_bucket = "04_Unsupported"
-        else:
-            target_bucket = "02_Review"
+            shutil.move(str(source), str(result.destination))
+            processed_count += 1
 
-        write_log(log_file, f"{now_str()} Moved / Преместен в {target_bucket}")
+            if result.doc_type in {"invoice", "receipt", "bank"}:
+                target_bucket = "01_Processed"
+            elif result.reason == "unsupported-extension":
+                target_bucket = "04_Unsupported"
+            else:
+                target_bucket = "02_Review"
 
-    return len(files)
+            write_log(log_file, f"{now_str()} Moved / Преместен в {target_bucket}")
+        except Exception as exc:
+            write_log(
+                log_file,
+                f"{now_str()} ERROR processing / ГРЕШКА при обработка на {source.name}: {exc}",
+            )
+
+    return processed_count
 
 
 def parse_args() -> argparse.Namespace:

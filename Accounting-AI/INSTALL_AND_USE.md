@@ -81,37 +81,18 @@ Optional PDF fallback on Linux/WSL / Допълнителен PDF fallback за 
 sudo apt install -y poppler-utils
 ```
 
-### Step 5 — Create the PowerShell runner / Стъпка 5 — Създайте PowerShell стартер
+### Step 5 — Runners are included / Стъпка 5 — Стартерите са включени
 
-Create a file `run_all.ps1` in `C:\Accounting-AI\` with content:  
-Създайте файл `run_all.ps1` в `C:\Accounting-AI\` със съдържание:
+The project already includes `run_all.ps1`, `run_all.bat`, and `run_all.sh` with automatic venv detection (checks both `.venv` inside the project and `../.venv` in the parent folder). No need to create them.
 
-```powershell
-param(
-    [string]$BaseDir = ".",
-    [string]$Client  = "Client_A"
-)
-$python = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-& $python (Join-Path $PSScriptRoot "intake_v1.py")        --base-dir $BaseDir --client $Client
-& $python (Join-Path $PSScriptRoot "extract_invoices_v1.py") --base-dir $BaseDir --client $Client
-Write-Host "Done / Готово: workflow completed for $Client"
-```
-
-Run it / Стартирайте го:
+Run via PowerShell / Стартирайте чрез PowerShell:
 ```powershell
 .\run_all.ps1 -BaseDir "." -Client "Client_A"
 ```
 
-Or double-click via a `.bat` launcher / Или двоен клик чрез `.bat`:
-
-Create `run_all.bat`:
+Or double-click `run_all.bat` (defaults to `Client_A`; pass a client name as argument for others) / Или двоен клик на `run_all.bat` (по подразбиране `Client_A`; подайте друго име като аргумент):
 ```bat
-@echo off
-cd /d "%~dp0"
-.venv\Scripts\python intake_v1.py --base-dir . --client Client_A
-.venv\Scripts\python extract_invoices_v1.py --base-dir . --client Client_A
-echo Done / Готово
-pause
+run_all.bat Client_B
 ```
 
 ---
@@ -407,5 +388,5 @@ invoice_Lidl.pdf                       ← date missing / липсва дата
 
 ---
 
-*Version / Версия: 1.0 — March 2026*  
+*Version / Версия: 1.1.2 — March 2026*  
 *Microinvest Delta Pro + TRZ Pro compatible / Съвместимо с*

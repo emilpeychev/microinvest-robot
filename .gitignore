@@ -15,7 +15,10 @@ Thumbs.db
 .idea/
 
 # Runtime data — keep templates, ignore generated output
-Clients/*/01_Processed/
-Clients/*/02_Review/
-Clients/*/04_Unsupported/
-Logs/run_log.txt
+**/Clients/*/01_Processed/
+**/Clients/*/02_Review/
+**/Clients/*/04_Unsupported/
+**/Logs/run_log.txt
+
+# Bundle (regeneratable)
+MVP_FULL_COPYABLE.md

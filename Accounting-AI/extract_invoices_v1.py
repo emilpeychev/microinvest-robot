@@ -403,6 +403,12 @@ def run(base_dir: Path, client_name: str) -> int:
 
     ensure_log_header(log_file)
 
+    if output_file.exists():
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup = output_file.with_name(f"extracted_invoices_BACKUP_{ts}.xlsx")
+        shutil.copy2(output_file, backup)
+        write_log(log_file, f"{now_str()} Backup / Резервно копие: {output_file.name} -> {backup.name}")
+
     shutil.copy2(template_file, output_file)
     wb = load_workbook(output_file)
     ws = wb.active
@@ -424,27 +430,33 @@ def run(base_dir: Path, client_name: str) -> int:
 
     extracted_count = 0
     for file_path in files:
-        row_data = build_row_values(file_path, client_name)
-        if row_data["Document Type"] not in {"Invoice", "Receipt"}:
-            continue
-        if file_path.suffix.lower() not in SUPPORTED_INVOICE_EXTENSIONS:
+        try:
+            row_data = build_row_values(file_path, client_name)
+            if row_data["Document Type"] not in {"Invoice", "Receipt"}:
+                continue
+            if file_path.suffix.lower() not in SUPPORTED_INVOICE_EXTENSIONS:
+                write_log(
+                    log_file,
+                    f"{now_str()} Skipped unsupported extraction format / Пропуснат неподдържан формат за извличане: {file_path.name}",
+                )
+                continue
+
+            row = ["" for _ in headers]
+            for key, value in row_data.items():
+                if key not in col_map:
+                    continue
+                idx = col_map[key]
+                row[idx] = value
+
+            ws.append(row)
+            extracted_count += 1
+
+            write_log(log_file, f"{now_str()} Extracted invoice row / Извлечен ред от {file_path.name} -> {output_file.name}")
+        except Exception as exc:
             write_log(
                 log_file,
-                f"{now_str()} Skipped unsupported extraction format / Пропуснат неподдържан формат за извличане: {file_path.name}",
+                f"{now_str()} ERROR extracting / ГРЕШКА при извличане на {file_path.name}: {exc}",
             )
-            continue
-
-        row = ["" for _ in headers]
-        for key, value in row_data.items():
-            if key not in col_map:
-                continue
-            idx = col_map[key]
-            row[idx] = value
-
-        ws.append(row)
-        extracted_count += 1
-
-        write_log(log_file, f"{now_str()} Extracted invoice row / Извлечен ред от {file_path.name} -> {output_file.name}")
 
     try:
         wb.save(output_file)
