@@ -31,7 +31,18 @@ The system automatically:
 
 ---
 
-## Step 2 — Copy the project / Копирайте проекта
+## Step 2 — Get the project / Вземете проекта
+
+### Option A — Git clone (recommended)
+
+If you have Git installed (download from https://git-scm.com/download/win if not):
+```
+cd C:\
+git clone https://github.com/YOUR_USERNAME/microinvest-robot.git
+cd microinvest-robot\Accounting-AI
+```
+
+### Option B — Manual copy
 
 Copy the entire `Accounting-AI` folder to your PC.
 
