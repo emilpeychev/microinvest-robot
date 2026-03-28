@@ -95,6 +95,32 @@ Or double-click `run_all.bat` (defaults to `Client_A`; pass a client name as arg
 run_all.bat Client_B
 ```
 
+### Step 6 — Create client folders / Стъпка 6 — Създайте клиентски папки
+
+**PowerShell:**
+```powershell
+cd C:\Accounting-AI
+$base = "Clients\Client_A"
+foreach ($dir in @("00_Incoming","01_Processed","02_Review","03_Archive","04_Unsupported")) {
+    New-Item -ItemType Directory -Force -Path "$base\$dir"
+}
+New-Item -ItemType Directory -Force -Path Rules, Templates, Logs
+```
+
+**cmd.exe:**
+```bat
+cd /d C:\Accounting-AI
+mkdir Clients\Client_A\00_Incoming
+mkdir Clients\Client_A\01_Processed
+mkdir Clients\Client_A\02_Review
+mkdir Clients\Client_A\03_Archive
+mkdir Clients\Client_A\04_Unsupported
+mkdir Rules Templates Logs
+```
+
+> The `Templates/` folder must contain `extracted_invoices.xlsx` — copy it from the project archive.
+> Папката `Templates/` трябва да съдържа `extracted_invoices.xlsx` — копирайте го от архива на проекта.
+
 ---
 
 ## 3. Installation on Linux or WSL / Инсталация на Linux или WSL
@@ -102,19 +128,25 @@ run_all.bat Client_B
 > Use this if you develop on Linux or run the workflow inside WSL while keeping files on a Windows drive (`/mnt/c/...`).
 > Използвайте това, ако разработвате на Linux или изпълнявате потока в WSL, докато файловете са на Windows диск.
 
-### Step 1 / Стъпка 1
+### Step 1 — Install system packages / Стъпка 1 — Инсталирайте системните пакети
 ```bash
 sudo apt update && sudo apt install -y python3 python3-venv python3-pip poppler-utils
 ```
 
-### Step 2 / Стъпка 2
+### Step 2 — Create venv & install deps / Стъпка 2 — Създайте venv и инсталирайте зависимости
 ```bash
 cd /path/to/Accounting-AI
 python3 -m venv .venv
 .venv/bin/python -m pip install openpyxl pymupdf pypdf
 ```
 
-### Step 3 / Стъпка 3
+### Step 3 — Create client folders / Стъпка 3 — Създайте клиентски папки
+```bash
+mkdir -p Clients/Client_A/{00_Incoming,01_Processed,02_Review,03_Archive,04_Unsupported}
+mkdir -p Rules Templates Logs
+```
+
+### Step 4 — Run / Стъпка 4 — Стартирайте
 ```bash
 chmod +x run_all.sh
 ./run_all.sh . Client_A
