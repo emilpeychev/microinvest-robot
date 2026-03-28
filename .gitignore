@@ -1,0 +1,21 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Runtime data — keep templates, ignore generated output
+Clients/*/01_Processed/
+Clients/*/02_Review/
+Clients/*/04_Unsupported/
+Logs/run_log.txt
