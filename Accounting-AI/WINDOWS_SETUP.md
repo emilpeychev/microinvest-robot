@@ -1,46 +1,46 @@
-# Accounting-AI — Инсталация и употреба на Windows
-# Windows Installation & Usage Guide
+# Accounting-AI — Windows Installation & Usage Guide
+# Инсталация и употреба на Windows
 
 ---
 
-## Какво прави тази програма? / What does this program do?
+## What does this program do? / Какво прави тази програма?
 
-Системата автоматично:
-1. Взема файловете от папка `00_Incoming` (фактури, касови бонове, банкови извлечения)
-2. Разпознава ги по име и разширение
-3. Преименува ги по стандарт и ги премества в `01_Processed`
-4. Генерира Excel таблица `extracted_invoices.xlsx` в `02_Review` с извлечените данни
-5. Вие проверявате таблицата и я импортирате ръчно в Delta Pro
+The system automatically:
+1. Takes files from `00_Incoming` folder (invoices, receipts, bank statements)
+2. Recognizes them by name and file extension
+3. Renames them to a standard format and moves them to `01_Processed`
+4. Generates an Excel spreadsheet `extracted_invoices.xlsx` in `02_Review` with extracted data
+5. You review the spreadsheet and manually import it into Delta Pro
 
-**Няма графичен интерфейс.** Работи се с папки и двоен клик на `.bat` файл.
+**There is no graphical interface.** You work with folders and double-click a `.bat` file.
 
 ---
 
-## Стъпка 1 — Инсталирайте Python / Install Python
+## Step 1 — Install Python / Инсталирайте Python
 
-1. Отворете: https://www.python.org/downloads/
-2. Изтеглете Python **3.10 или по-нова** версия
-3. **ВАЖНО** — по време на инсталацията отметнете:
+1. Go to: https://www.python.org/downloads/
+2. Download Python **3.10 or newer**
+3. **IMPORTANT** — during installation, check these boxes:
    - ✅ **Add Python to PATH**
    - ✅ **Install pip**
-4. Проверка — отворете PowerShell (натиснете `Win+X` → **Windows PowerShell**) и напишете:
+4. Verify — open PowerShell (press `Win+X` → **Windows PowerShell**) and type:
    ```
    py --version
    ```
-   Трябва да видите нещо като: `Python 3.12.x`
+   You should see something like: `Python 3.12.x`
 
 ---
 
-## Стъпка 2 — Копирайте проекта / Copy the project
+## Step 2 — Copy the project / Копирайте проекта
 
-Копирайте цялата папка `Accounting-AI` на вашия компютър.
+Copy the entire `Accounting-AI` folder to your PC.
 
-Препоръчано местоположение:
+Recommended location:
 ```
 C:\Accounting-AI\
 ```
 
-Структурата трябва да изглежда така:
+The structure should look like this:
 ```
 C:\Accounting-AI\
 ├── intake_v1.py
@@ -56,36 +56,36 @@ C:\Accounting-AI\
 
 ---
 
-## Стъпка 3 — Създайте виртуална среда / Create virtual environment
+## Step 3 — Create virtual environment / Създайте виртуална среда
 
-Отворете PowerShell и напишете:
+Open PowerShell and type:
 ```
 cd C:\Accounting-AI
 py -m venv .venv
 ```
 
-Ще се създаде папка `.venv` — това е изолирана Python среда за проекта.
+This creates a `.venv` folder — an isolated Python environment for the project.
 
 ---
 
-## Стъпка 4 — Инсталирайте зависимостите / Install dependencies
+## Step 4 — Install dependencies / Инсталирайте зависимостите
 
-В същия PowerShell прозорец:
+In the same PowerShell window:
 ```
 .\.venv\Scripts\python -m pip install openpyxl pymupdf pypdf
 ```
 
-Проверка:
+Verify:
 ```
 .\.venv\Scripts\python -c "import openpyxl, pypdf; print('OK')"
 ```
-Ако видите `OK` — всичко е наред.
+If you see `OK` — everything is fine.
 
 ---
 
-## Стъпка 5 — Създайте клиентски папки / Create client folders
+## Step 5 — Create client folders / Създайте клиентски папки
 
-В PowerShell:
+In PowerShell:
 ```powershell
 cd C:\Accounting-AI
 $base = "Clients\Client_A"
@@ -95,7 +95,7 @@ foreach ($dir in @("00_Incoming","01_Processed","02_Review","03_Archive","04_Uns
 New-Item -ItemType Directory -Force -Path Rules, Templates, Logs
 ```
 
-**Или ако предпочитате cmd.exe** (натиснете `Win+R` → напишете `cmd` → Enter):
+**Or if you prefer cmd.exe** (press `Win+R` → type `cmd` → Enter):
 ```
 cd /d C:\Accounting-AI
 mkdir Clients\Client_A\00_Incoming
@@ -108,33 +108,33 @@ mkdir Templates
 mkdir Logs
 ```
 
-> ⚠️ Папка `Templates\` трябва да съдържа файла `extracted_invoices.xlsx` — той идва с проекта.
+> ⚠️ The `Templates\` folder must contain the file `extracted_invoices.xlsx` — it comes with the project.
 
 ---
 
-## Стъпка 6 — Пуснете програмата / Run the program
+## Step 6 — Run the program / Пуснете програмата
 
-### Вариант А — Двоен клик (най-лесно)
+### Option A — Double-click (easiest)
 
-1. Отворете папката `C:\Accounting-AI\` в Explorer
-2. Кликнете двойно на **`run_all.bat`**
-3. Ще се отвори черен прозорец, ще обработи файловете и ще каже `Done / Готово`
+1. Open the `C:\Accounting-AI\` folder in Explorer
+2. Double-click **`run_all.bat`**
+3. A black window will open, process the files, and say `Done / Готово`
 
-По подразбиране обработва `Client_A`.
+By default it processes `Client_A`.
 
-### Вариант Б — PowerShell
+### Option B — PowerShell
 
 ```
 cd C:\Accounting-AI
 .\run_all.ps1 -Client "Client_A"
 ```
 
-За друг клиент:
+For a different client:
 ```
 .\run_all.ps1 -Client "Client_B"
 ```
 
-### Вариант В — cmd.exe
+### Option C — cmd.exe
 
 ```
 cd /d C:\Accounting-AI
@@ -143,128 +143,128 @@ run_all.bat Client_A
 
 ---
 
-## Ежедневен работен процес / Daily Workflow
+## Daily Workflow / Ежедневен работен процес
 
 ```
-    ВИЕ
+    YOU
      │
      ▼
-  Пускате файлове в: Clients\Client_A\00_Incoming\
-  (PDF фактури, JPG касови бонове, CSV/XLSX банкови извлечения)
+  Drop files into: Clients\Client_A\00_Incoming\
+  (PDF invoices, JPG receipts, CSV/XLSX bank statements)
      │
      ▼
-  Кликвате двойно на run_all.bat
+  Double-click run_all.bat
      │
      ▼
-  Програмата:
-  • Преименува и премества файловете в 01_Processed\
-  • Създава Excel таблица в 02_Review\extracted_invoices.xlsx
+  The program:
+  • Renames and moves files to 01_Processed\
+  • Creates Excel spreadsheet in 02_Review\extracted_invoices.xlsx
      │
      ▼
-  Отваряте 02_Review\extracted_invoices.xlsx в Excel
+  Open 02_Review\extracted_invoices.xlsx in Excel
      │
      ▼
-  Проверявате и коригирате данните
-  (доставчик, дата, сума, номер на фактура)
+  Review and correct the data
+  (supplier, date, amount, invoice number)
      │
      ▼
-  Импортирате ръчно в Delta Pro
+  Manually import into Delta Pro
 ```
 
 ---
 
-## Какво съдържа Excel таблицата / Output columns
+## Output columns / Какво съдържа Excel таблицата
 
-| Колона | Попълва се автоматично | Бележки |
+| Column | Auto-filled | Notes |
 |---|---|---|
-| Client | ✅ | От името на файла |
-| File Name | ✅ | Оригинално име |
+| Client | ✅ | From filename |
+| File Name | ✅ | Original name |
 | Document Type | ✅ | Invoice / Receipt / Bank / Other |
-| Supplier/Customer | ✅ | От името на файла — **проверете!** |
-| Invoice Number | ❌ | Попълнете ръчно |
-| Invoice Date | ✅ | От името на файла |
-| Net Amount | ❌ | Попълнете ръчно |
-| VAT Amount | ❌ | Попълнете ръчно |
-| Gross Amount | ✅ | От името на файла |
-| Currency | ✅ | BGN по подразбиране |
-| Confidence Score | ✅ | 0.0–1.0 — ако е под 0.5, проверете внимателно |
-| Mandatory Review | ✅ | `Yes` = от снимка, задължителна проверка |
-| Notes | ✅ | Предупреждения от системата |
+| Supplier/Customer | ✅ | From filename — **verify!** |
+| Invoice Number | ❌ | Fill manually |
+| Invoice Date | ✅ | From filename |
+| Net Amount | ❌ | Fill manually |
+| VAT Amount | ❌ | Fill manually |
+| Gross Amount | ✅ | From filename |
+| Currency | ✅ | BGN by default |
+| Confidence Score | ✅ | 0.0–1.0 — if below 0.5, check carefully |
+| Mandatory Review | ✅ | `Yes` = from image, must verify |
+| Notes | ✅ | System warnings |
 
 ---
 
-## Именуване на файлове / File naming tips
+## File naming tips / Именуване на файлове
 
-За по-добро разпознаване, именувайте файловете така:
+For better recognition, name your files like this:
 
 ```
-faktura_Lidl_2026-03-18_124.50.pdf      ← ДОБРО ✅
-фактура_Shell_2026-03-20_89.99.pdf      ← ДОБРО ✅
-kasov_bon_Kaufland_2026-03-15_42.00.jpg  ← ДОБРО ✅
-scan001.pdf                              ← ЛОШО ❌ (няма данни)
+faktura_Lidl_2026-03-18_124.50.pdf      ← GOOD ✅
+invoice_Shell_2026-03-20_89.99.pdf      ← GOOD ✅
+kasov_bon_Kaufland_2026-03-15_42.00.jpg  ← GOOD ✅
+scan001.pdf                              ← BAD ❌ (no data)
 ```
 
-Ключови думи, които системата разпознава:
-- **Фактури:** `invoice`, `inv`, `factura`, `faktura`, `fakt`, `bill`
-- **Касови бонове:** `receipt`, `kasov`, `bon`, `slip`
-- **Банкови:** `bank`, `statement`, `extract`, `banka`
+Keywords the system recognizes:
+- **Invoices:** `invoice`, `inv`, `factura`, `faktura`, `fakt`, `bill`
+- **Receipts:** `receipt`, `kasov`, `bon`, `slip`
+- **Bank statements:** `bank`, `statement`, `extract`, `banka`
 
 ---
 
-## Автоматизация / Automation (по желание)
+## Automation / Автоматизация (optional)
 
-За да се стартира автоматично всяка сутрин:
+To run automatically every morning:
 
-1. Натиснете `Win+R` → напишете `taskschd.msc` → Enter
-2. Кликнете **Създай основна задача** / **Create Basic Task**
-3. Тригер: **Ежедневно в 08:00**
-4. Действие: **Стартирай програма**
-   - Програма: `C:\Accounting-AI\run_all.bat`
-   - Стартирай в: `C:\Accounting-AI`
-5. Запишете
+1. Press `Win+R` → type `taskschd.msc` → Enter
+2. Click **Create Basic Task**
+3. Trigger: **Daily at 08:00**
+4. Action: **Start a program**
+   - Program: `C:\Accounting-AI\run_all.bat`
+   - Start in: `C:\Accounting-AI`
+5. Save
 
 ---
 
-## Отстраняване на проблеми / Troubleshooting
+## Troubleshooting / Отстраняване на проблеми
 
-### Грешка: `ModuleNotFoundError: No module named 'openpyxl'`
+### Error: `ModuleNotFoundError: No module named 'openpyxl'`
 
-Използвате грешен Python. Инсталирайте отново:
+You are using the wrong Python. Reinstall:
 ```
 cd C:\Accounting-AI
 .\.venv\Scripts\python -m pip install openpyxl pymupdf pypdf
 ```
 
-### Грешка: `FileNotFoundError: Missing required path(s)`
+### Error: `FileNotFoundError: Missing required path(s)`
 
-Папките не са създадени. Върнете се на **Стъпка 5** и изпълнете командите.
+Folders were not created. Go back to **Step 5** and run the commands.
 
-### Файл отиде в `02_Review` вместо в `01_Processed`
+### File went to `02_Review` instead of `01_Processed`
 
-Името на файла не беше разпознато. Преименувайте го да съдържа ключова дума:
+The filename was not recognized. Rename it to include a keyword:
 - `invoice`, `faktura`, `receipt`, `bon`, `bank`
 
-### Оценка на доверие (Confidence Score) е под 0.5
+### Confidence Score is below 0.5
 
-Системата не е сигурна. Проверете колона `Notes` и попълнете липсващите полета ръчно.
+The system is not sure. Check the `Notes` column and fill in missing fields manually.
 
-### Logs — къде да видя какво е направила програмата
+### Logs — where to see what the program did
 
-Отворете файла `Logs\run_log.txt` с Notepad. Всеки ред показва какво е класифицирано, преименувано и преместено.
-
----
-
-## Какво НЕ прави тази програма / Limitations
-
-- ❌ **НЕ** контира директно в Delta Pro
-- ❌ **НЕ** презаписва счетоводни данни
-- ❌ **НЕ** подава декларации
-- ❌ **НЕ** изчислява заплати (ТРЗ)
-- ❌ **НЕ** има графичен интерфейс — работи с файлове и Excel
-
-> ⚠️ Ръчната проверка в `02_Review` е **задължителна** преди импорт в Delta Pro.
+Open `Logs\run_log.txt` with Notepad. Each line shows what was classified, renamed, and moved.
 
 ---
 
-*Версия: 1.1.2 — Март 2026*
-*Съвместимо с Microinvest Delta Pro + ТРЗ Pro*
+## Limitations / Какво НЕ прави тази програма
+
+- ❌ Does **NOT** post directly to Delta Pro
+- ❌ Does **NOT** overwrite accounting data
+- ❌ Does **NOT** file tax declarations
+- ❌ Does **NOT** calculate payroll (TRZ)
+- ❌ Does **NOT** have a graphical interface — works with files and Excel
+
+> ⚠️ Manual review in `02_Review` is **mandatory** before any Delta Pro import.
+
+---
+
+*Version: 1.1.2 — March 2026*
+*Compatible with Microinvest Delta Pro + TRZ Pro*
