@@ -4,23 +4,12 @@
 from __future__ import annotations
 
 import tempfile
-import types
 import unittest
 from pathlib import Path
 
 from test_utils import load_module
 
 intake = load_module("intake_v1", "intake_v1.py")
-
-# Keep unit tests runnable even when openpyxl is unavailable in system Python.
-try:
-    import openpyxl  # noqa: F401
-except Exception:
-    import sys
-
-    fake_openpyxl = types.SimpleNamespace(load_workbook=lambda *_args, **_kwargs: None)
-    sys.modules["openpyxl"] = fake_openpyxl
-
 extract = load_module("extract_invoices_v1", "extract_invoices_v1.py")
 
 

@@ -3,15 +3,7 @@
 
 from __future__ import annotations
 
-import types
 import unittest
-
-try:
-    import openpyxl  # noqa: F401
-except Exception:
-    import sys
-    fake_openpyxl = types.SimpleNamespace(load_workbook=lambda *_a, **_k: None)
-    sys.modules["openpyxl"] = fake_openpyxl
 
 from test_utils import load_module
 

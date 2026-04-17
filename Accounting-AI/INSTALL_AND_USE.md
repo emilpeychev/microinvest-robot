@@ -67,14 +67,17 @@ py -m venv .venv
 ### Step 4 — Install dependencies / Стъпка 4 — Инсталирайте зависимостите
 
 ```powershell
-.\.venv\Scripts\python -m pip install openpyxl pymupdf pypdf
+.\.\.venv\Scripts\python -m pip install pymupdf pypdf
 ```
 
 Verify / Проверете:
 ```powershell
-.\.venv\Scripts\python -c "import openpyxl, pypdf; print('OK')"
+.\.\.venv\Scripts\python -c "import pypdf; print('OK')"
 ```
 Expected / Очаквано: `OK`
+
+> **Note:** `openpyxl` is **not** required — Excel output uses Python's built-in XML libraries.
+> **Забележка:** `openpyxl` **не** е необходим — Excel изходът използва вградените XML библиотеки на Python.
 
 Optional PDF fallback on Linux/WSL / Допълнителен PDF fallback за Linux/WSL:
 ```bash
@@ -137,7 +140,7 @@ sudo apt update && sudo apt install -y python3 python3-venv python3-pip poppler-
 ```bash
 cd /path/to/Accounting-AI
 python3 -m venv .venv
-.venv/bin/python -m pip install openpyxl pymupdf pypdf
+.venv/bin/python -m pip install pymupdf pypdf
 ```
 
 ### Step 3 — Create client folders / Стъпка 3 — Създайте клиентски папки
@@ -381,14 +384,14 @@ Alternatively use the `.bat` file as the program / Алтернативно из
 
 ## 11. Troubleshooting / Отстраняване на проблеми
 
-### `ModuleNotFoundError: No module named 'openpyxl'`
+### `ModuleNotFoundError: No module named 'pymupdf'` or `'pypdf'`
 You are using the wrong Python. Always use the `.venv` Python.  
 Използвате грешен Python. Винаги използвайте Python от `.venv`.
 ```powershell
 # Windows
-.\.venv\Scripts\python -m pip install openpyxl
+.\.\.venv\Scripts\python -m pip install pymupdf pypdf
 # Linux
-.venv/bin/python -m pip install openpyxl
+.venv/bin/python -m pip install pymupdf pypdf
 ```
 
 ### `FileNotFoundError: Missing required path(s)`

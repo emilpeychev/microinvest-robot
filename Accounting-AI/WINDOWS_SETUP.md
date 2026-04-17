@@ -83,14 +83,17 @@ This creates a `.venv` folder — an isolated Python environment for the project
 
 In the same PowerShell window:
 ```
-.\.venv\Scripts\python -m pip install openpyxl pymupdf pypdf
+.\.\.venv\Scripts\python -m pip install pymupdf pypdf
 ```
 
 Verify:
 ```
-.\.venv\Scripts\python -c "import openpyxl, pypdf; print('OK')"
+.\.\.venv\Scripts\python -c "import pypdf; print('OK')"
 ```
 If you see `OK` — everything is fine.
+
+> **Note:** `openpyxl` is **not** required — Excel output uses Python's built-in XML libraries.
+> **Забележка:** `openpyxl` **не** е необходим — Excel изходът използва вградените XML библиотеки на Python.
 
 ---
 
@@ -238,12 +241,12 @@ To run automatically every morning:
 
 ## Troubleshooting / Отстраняване на проблеми
 
-### Error: `ModuleNotFoundError: No module named 'openpyxl'`
+### Error: `ModuleNotFoundError: No module named 'pymupdf'` or `'pypdf'`
 
 You are using the wrong Python. Reinstall:
 ```
 cd C:\Accounting-AI
-.\.venv\Scripts\python -m pip install openpyxl pymupdf pypdf
+.\.\.venv\Scripts\python -m pip install pymupdf pypdf
 ```
 
 ### Error: `FileNotFoundError: Missing required path(s)`

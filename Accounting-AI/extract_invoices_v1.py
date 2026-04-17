@@ -11,10 +11,10 @@ import argparse
 import re
 import shutil
 import subprocess
+import zipfile
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
-
-from openpyxl import load_workbook
 
 try:
     import fitz  # type: ignore
@@ -221,6 +221,169 @@ def parse_invoice_fields_from_text(text: str) -> dict[str, object]:
     return data
 
 
+XLSX_NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+XLSX_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+XLSX_CONTENT_NS = "http://schemas.openxmlformats.org/package/2006/content-types"
+XLSX_RELS_NS = "http://schemas.openxmlformats.org/package/2006/relationships"
+
+
+def _col_letter(col_idx: int) -> str:
+    """Convert 0-based column index to Excel column letter (A, B, ..., Z, AA, ...)."""
+    result = ""
+    idx = col_idx
+    while True:
+        result = chr(65 + idx % 26) + result
+        idx = idx // 26 - 1
+        if idx < 0:
+            break
+    return result
+
+
+def read_xlsx_headers(template_path: Path) -> list[str]:
+    """Read first-row headers from an xlsx template using only stdlib."""
+    ns = {"ns": XLSX_NS}
+    with zipfile.ZipFile(template_path, "r") as zf:
+        # Try shared strings first
+        strings: list[str] = []
+        if "xl/sharedStrings.xml" in zf.namelist():
+            tree = ET.parse(zf.open("xl/sharedStrings.xml"))
+            for si in tree.findall(".//ns:si", ns):
+                t_el = si.find("ns:t", ns)
+                strings.append(t_el.text if t_el is not None and t_el.text else "")
+
+        tree = ET.parse(zf.open("xl/worksheets/sheet1.xml"))
+        row1 = tree.find(".//ns:sheetData/ns:row", ns)
+        if row1 is None:
+            raise ValueError("Template has no rows / Шаблонът няма редове")
+
+        headers: list[str] = []
+        for c in row1:
+            t_attr = c.get("t", "")
+            # Inline string
+            if t_attr == "inlineStr":
+                is_el = c.find("ns:is/ns:t", ns)
+                headers.append(is_el.text if is_el is not None and is_el.text else "")
+            # Shared string
+            elif t_attr == "s":
+                v_el = c.find("ns:v", ns)
+                if v_el is not None and v_el.text:
+                    headers.append(strings[int(v_el.text)])
+                else:
+                    headers.append("")
+            # Plain value
+            else:
+                v_el = c.find("ns:v", ns)
+                headers.append(v_el.text if v_el is not None and v_el.text else "")
+    return headers
+
+
+def write_xlsx(output_path: Path, headers: list[str], rows: list[list[object]]) -> None:
+    """Write a minimal xlsx file with headers and data rows using only stdlib."""
+    # Collect all unique strings
+    all_strings: list[str] = []
+    string_index: dict[str, int] = {}
+    for h in headers:
+        if h not in string_index:
+            string_index[h] = len(all_strings)
+            all_strings.append(h)
+    for row in rows:
+        for val in row:
+            if isinstance(val, str) and val not in string_index:
+                string_index[val] = len(all_strings)
+                all_strings.append(val)
+
+    # Build sharedStrings.xml
+    ss_root = ET.Element("sst", xmlns=XLSX_NS, count=str(len(all_strings)), uniqueCount=str(len(all_strings)))
+    for s in all_strings:
+        si = ET.SubElement(ss_root, "si")
+        t = ET.SubElement(si, "t")
+        t.text = s
+
+    # Build sheet1.xml
+    ws_root = ET.Element("worksheet", xmlns=XLSX_NS)
+    sd = ET.SubElement(ws_root, "sheetData")
+
+    # Header row
+    r1 = ET.SubElement(sd, "row", r="1")
+    for ci, h in enumerate(headers):
+        c = ET.SubElement(r1, "c", r=f"{_col_letter(ci)}1", t="s")
+        v = ET.SubElement(c, "v")
+        v.text = str(string_index[h])
+
+    # Data rows
+    for ri, row in enumerate(rows, start=2):
+        r_el = ET.SubElement(sd, "row", r=str(ri))
+        for ci, val in enumerate(row):
+            ref = f"{_col_letter(ci)}{ri}"
+            if isinstance(val, (int, float)):
+                c = ET.SubElement(r_el, "c", r=ref)
+                v = ET.SubElement(c, "v")
+                v.text = str(val)
+            else:
+                s = str(val) if val is not None else ""
+                if s not in string_index:
+                    string_index[s] = len(all_strings)
+                    all_strings.append(s)
+                    si = ET.SubElement(ss_root, "si")
+                    t = ET.SubElement(si, "t")
+                    t.text = s
+                    ss_root.set("count", str(len(all_strings)))
+                    ss_root.set("uniqueCount", str(len(all_strings)))
+                c = ET.SubElement(r_el, "c", r=ref, t="s")
+                v = ET.SubElement(c, "v")
+                v.text = str(string_index[s])
+
+    # Build minimal xlsx ZIP
+    content_types = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<Types xmlns="{XLSX_CONTENT_NS}">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+        '</Types>'
+    )
+
+    rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<Relationships xmlns="{XLSX_RELS_NS}">'
+        f'<Relationship Id="rId1" Type="{XLSX_REL_NS}/officeDocument" Target="xl/workbook.xml"/>'
+        '</Relationships>'
+    )
+
+    workbook = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<workbook xmlns="{XLSX_NS}" xmlns:r="{XLSX_REL_NS}">'
+        '<sheets><sheet name="Extracted" sheetId="1" r:id="rId1"/></sheets>'
+        '</workbook>'
+    )
+
+    wb_rels = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<Relationships xmlns="{XLSX_RELS_NS}">'
+        f'<Relationship Id="rId1" Type="{XLSX_REL_NS}/worksheet" Target="worksheets/sheet1.xml"/>'
+        f'<Relationship Id="rId2" Type="{XLSX_REL_NS}/sharedStrings" Target="sharedStrings.xml"/>'
+        '</Relationships>'
+    )
+
+    with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", content_types)
+        zf.writestr("_rels/.rels", rels)
+        zf.writestr("xl/workbook.xml", workbook)
+        zf.writestr("xl/_rels/workbook.xml.rels", wb_rels)
+        zf.writestr(
+            "xl/worksheets/sheet1.xml",
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            + ET.tostring(ws_root, encoding="unicode"),
+        )
+        zf.writestr(
+            "xl/sharedStrings.xml",
+            '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+            + ET.tostring(ss_root, encoding="unicode"),
+        )
+
+
 def resolve_column_map(headers: list[str]) -> dict[str, int]:
     result: dict[str, int] = {}
     normalized_headers = {h.strip().lower(): idx for idx, h in enumerate(headers)}
@@ -409,11 +572,7 @@ def run(base_dir: Path, client_name: str) -> int:
         shutil.copy2(output_file, backup)
         write_log(log_file, f"{now_str()} Backup / Резервно копие: {output_file.name} -> {backup.name}")
 
-    shutil.copy2(template_file, output_file)
-    wb = load_workbook(output_file)
-    ws = wb.active
-
-    headers = [cell.value if cell.value is not None else "" for cell in ws[1]]
+    headers = read_xlsx_headers(template_file)
     col_map = resolve_column_map([str(h) for h in headers])
     if "Mandatory Review" not in col_map:
         write_log(
@@ -429,6 +588,7 @@ def run(base_dir: Path, client_name: str) -> int:
     files.sort(key=lambda p: p.name.lower())
 
     extracted_count = 0
+    all_rows: list[list[object]] = []
     for file_path in files:
         try:
             row_data = build_row_values(file_path, client_name)
@@ -441,14 +601,14 @@ def run(base_dir: Path, client_name: str) -> int:
                 )
                 continue
 
-            row = ["" for _ in headers]
+            row: list[object] = ["" for _ in headers]
             for key, value in row_data.items():
                 if key not in col_map:
                     continue
                 idx = col_map[key]
                 row[idx] = value
 
-            ws.append(row)
+            all_rows.append(row)
             extracted_count += 1
 
             write_log(log_file, f"{now_str()} Extracted invoice row / Извлечен ред от {file_path.name} -> {output_file.name}")
@@ -459,7 +619,7 @@ def run(base_dir: Path, client_name: str) -> int:
             )
 
     try:
-        wb.save(output_file)
+        write_xlsx(output_file, headers, all_rows)
     except PermissionError as exc:
         raise PermissionError(
             f"Cannot save {output_file} / Не може да се запише файлът. "
