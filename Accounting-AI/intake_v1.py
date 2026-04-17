@@ -74,6 +74,7 @@ def detect_doc_type(file_name: str, ext: str) -> tuple[str, str]:
     invoice_keywords = [
         "invoice", "factura", "faktura",
         "bill", "danachna",
+        "фактура", "ф-ра",
     ]
     receipt_keywords = [
         "receipt", "kasov", "bon", "slip", "sticker",
@@ -152,6 +153,8 @@ def detect_counterparty(file_stem: str) -> str:
         "banka",
         "izvlechenie",
         "danachna",
+        "фактура",
+        "ф-ра",
     }
     for token in re.split(r"[_\-.\s]+", file_stem):
         token_lower = token.lower()
