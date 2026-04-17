@@ -14,6 +14,7 @@ fi
 
 run_unit() {
   "$PYTHON_BIN" -m unittest discover -s "$SCRIPT_DIR/tests" -p "test_unit_*.py" -v
+  "$PYTHON_BIN" "$SCRIPT_DIR/tests/test_unit_delta_xml.py"
 }
 
 run_integration() {

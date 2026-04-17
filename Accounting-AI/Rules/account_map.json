@@ -1,0 +1,154 @@
+{
+    "_comment": "Mapping: keyword in supplier/term → expense account. First match wins. / Съпоставяне: ключова дума → сметка за разход. Първото съвпадение печели.",
+    "expense_rules": [
+        {
+            "keyword": "гориво",
+            "account": "601/3",
+            "term_prefix": "Покупка гориво"
+        },
+        {
+            "keyword": "fuel",
+            "account": "601/3",
+            "term_prefix": "Покупка гориво"
+        },
+        {
+            "keyword": "шел",
+            "account": "601/3",
+            "term_prefix": "Покупка гориво"
+        },
+        {
+            "keyword": "shell",
+            "account": "601/3",
+            "term_prefix": "Покупка гориво"
+        },
+        {
+            "keyword": "лукойл",
+            "account": "601/3",
+            "term_prefix": "Покупка гориво"
+        },
+        {
+            "keyword": "петрол",
+            "account": "601/3",
+            "term_prefix": "Покупка гориво"
+        },
+        {
+            "keyword": "омв",
+            "account": "601/3",
+            "term_prefix": "Покупка гориво"
+        },
+        {
+            "keyword": "ремонт",
+            "account": "602/2",
+            "term_prefix": "Покупка ремонт"
+        },
+        {
+            "keyword": "repair",
+            "account": "602/2",
+            "term_prefix": "Покупка ремонт"
+        },
+        {
+            "keyword": "авто",
+            "account": "602/2",
+            "term_prefix": "Покупка ремонт"
+        },
+        {
+            "keyword": "автостъкла",
+            "account": "601/1",
+            "term_prefix": "Покупка ремонт"
+        },
+        {
+            "keyword": "материал",
+            "account": "601/2",
+            "term_prefix": "Покупка материали"
+        },
+        {
+            "keyword": "лепило",
+            "account": "601/2",
+            "term_prefix": "Покупка материали"
+        },
+        {
+            "keyword": "канцелар",
+            "account": "601/6",
+            "term_prefix": "Покупка канц. м-ли"
+        },
+        {
+            "keyword": "office",
+            "account": "601/6",
+            "term_prefix": "Покупка канц. м-ли"
+        },
+        {
+            "keyword": "инструмент",
+            "account": "601/5",
+            "term_prefix": "Покупка инструменти"
+        },
+        {
+            "keyword": "tool",
+            "account": "601/5",
+            "term_prefix": "Покупка инструменти"
+        },
+        {
+            "keyword": "нивелир",
+            "account": "601/5",
+            "term_prefix": "Покупка инструменти"
+        },
+        {
+            "keyword": "телеком",
+            "account": "602/4",
+            "term_prefix": "Покупка тел. услуги"
+        },
+        {
+            "keyword": "виваком",
+            "account": "602/4",
+            "term_prefix": "Покупка тел. услуги"
+        },
+        {
+            "keyword": "vivacom",
+            "account": "602/4",
+            "term_prefix": "Покупка тел. услуги"
+        },
+        {
+            "keyword": "а1",
+            "account": "602/4",
+            "term_prefix": "Покупка тел. услуги"
+        },
+        {
+            "keyword": "теленор",
+            "account": "602/4",
+            "term_prefix": "Покупка тел. услуги"
+        },
+        {
+            "keyword": "счетовод",
+            "account": "602/3",
+            "term_prefix": "Покупка счетоводни услуги"
+        },
+        {
+            "keyword": "accounting",
+            "account": "602/3",
+            "term_prefix": "Покупка счетоводни услуги"
+        },
+        {
+            "keyword": "обучение",
+            "account": "602/1",
+            "term_prefix": "Покупка обучение"
+        },
+        {
+            "keyword": "курс",
+            "account": "602/1",
+            "term_prefix": "Покупка обучение"
+        },
+        {
+            "keyword": "training",
+            "account": "602/1",
+            "term_prefix": "Покупка обучение"
+        }
+    ],
+    "default_expense_account": "602/9",
+    "default_term_prefix": "Покупка",
+    "vat_rate": 0.20,
+    "supplier_account": "401/1",
+    "vat_input_account": "453/1",
+    "vat_output_account": "453/2",
+    "customer_account": "411",
+    "cash_account": "501",
+    "bank_account": "503/1"
+}

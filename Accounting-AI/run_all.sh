@@ -23,5 +23,6 @@ fi
 
 "$PYTHON_BIN" "$SCRIPT_DIR/intake_v1.py" --base-dir "$BASE_DIR" --client "$CLIENT"
 "$PYTHON_BIN" "$SCRIPT_DIR/extract_invoices_v1.py" --base-dir "$BASE_DIR" --client "$CLIENT"
+"$PYTHON_BIN" "$SCRIPT_DIR/generate_delta_xml.py" --base-dir "$BASE_DIR" --client "$CLIENT"
 
-echo "Done / Готово: intake + extraction completed / вход и извличане приключиха за $CLIENT"
+echo "Done / Готово: intake + extraction + Delta Pro XML completed / вход, извличане и Delta Pro XML приключиха за $CLIENT"

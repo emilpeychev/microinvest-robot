@@ -40,5 +40,13 @@ if errorlevel 1 (
   exit /b 1
 )
 
+echo === Delta Pro XML / Генериране на XML за Delta Pro ===
+"%PYTHON_EXE%" generate_delta_xml.py --base-dir . --client "%CLIENT%"
+if errorlevel 1 (
+  echo ERROR during Delta XML generation / Грешка при генериране на Delta XML
+  pause
+  exit /b 1
+)
+
 echo Done / Готово: workflow completed for %CLIENT%
 pause

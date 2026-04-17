@@ -26,4 +26,7 @@ Write-Host "=== Accounting-AI intake run / Стартиране на входя�
 Write-Host "=== Invoice extraction / Извличане на фактури ==="
 & $python (Join-Path $PSScriptRoot "extract_invoices_v1.py") --base-dir $BaseDir --client $Client
 
+Write-Host "=== Delta Pro XML / Генериране на XML за Delta Pro ==="
+& $python (Join-Path $PSScriptRoot "generate_delta_xml.py") --base-dir $BaseDir --client $Client
+
 Write-Host "Done / Готово: workflow completed for $Client"
