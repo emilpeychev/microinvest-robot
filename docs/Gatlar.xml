@@ -1,0 +1,386 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TransferData xmlns="urn:Transfer">
+  <Accountings>
+    <Accounting AccountingDate="2025-01-04" Number="0000000001" Reference="" OptionalReference="" Term="данък МПС" Vies="1" ViesMonth="2025-01-04">
+      <Document Date="2025-01-04" Number="0000000001" DocumentType="10" />
+      <Company Name="Община Младост" Bulstat="999999999999999">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="606/3" Direction="Debit" VatTerm="1" Amount="175.370000" />
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="1" Amount="175.370000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-04" Number="0000000002" Reference="" OptionalReference="" Term="плащане" Vies="1" ViesMonth="2025-01-04">
+      <Document Date="2025-01-04" Number="0000000001" DocumentType="9" />
+      <Company Name="Община Младост" Bulstat="999999999999999">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="175.370000" />
+        <AccountingDetail AccountNumber="422" Direction="Credit" VatTerm="1" Amount="175.370000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-10" DueDate="2025-01-10" Number="0000000003" Reference="" OptionalReference="" Term="Покупка гориво бус" Vies="1" ViesMonth="2025-01-10">
+      <Document Date="2025-01-10" Number="2008940031" DocumentType="1" />
+      <Company Name="ШЕЛ БЪЛГАРИЯ ЕАД" Bulstat="831915840" VatNumber="BG831915840">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="223.490000" />
+        <AccountingDetail AccountNumber="601/3" Direction="Debit" VatTerm="2" Amount="186.240000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Debit" VatTerm="2" Amount="37.250000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-10" Number="0000000004" Reference="" OptionalReference="" Term="Разплащане по документ" Vies="1" ViesMonth="2025-01-10">
+      <Document Date="2025-01-10" Number="0000000002" DocumentType="9" />
+      <Company Name="ШЕЛ БЪЛГАРИЯ ЕАД" Bulstat="831915840" VatNumber="BG831915840">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="223.490000" />
+        <AccountingDetail AccountNumber="422" Direction="Credit" VatTerm="1" Amount="223.490000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-17" DueDate="2025-01-17" Number="0000000005" Reference="" OptionalReference="" Term="Покупка нивелир" Vies="1" ViesMonth="2025-01-17">
+      <Document Date="2025-01-17" Number="2000225920" DocumentType="1" />
+      <Company Name="ЕЛ ЕНЕРДЖИ 03 ЕООД" Bulstat="131107147" VatNumber="BG131107147">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="31.140000" />
+        <AccountingDetail AccountNumber="601/5" Direction="Debit" VatTerm="2" Amount="25.950000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Debit" VatTerm="2" Amount="5.190000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-22" DueDate="2025-01-22" Number="0000000006" Reference="" OptionalReference="" Term="Покупка ремонт бус" Vies="1" ViesMonth="2025-01-22">
+      <Document Date="2025-01-22" Number="1051102135" DocumentType="1" />
+      <Company Name="АВТОСТЪКЛА КОБРА ЕООД" Bulstat="207684542" VatNumber="BG207684542">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="84.000000" />
+        <AccountingDetail AccountNumber="601/1" Direction="Debit" VatTerm="2" Amount="70.000000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Debit" VatTerm="2" Amount="14.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-22" Number="0000000007" Reference="" OptionalReference="" Term="Разплащане по документ" Vies="1" ViesMonth="2025-01-22">
+      <Document Date="2025-01-22" Number="0000000003" DocumentType="9" />
+      <Company Name="АВТОСТЪКЛА КОБРА ЕООД" Bulstat="207684542" VatNumber="BG207684542">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="84.000000" />
+        <AccountingDetail AccountNumber="422" Direction="Credit" VatTerm="1" Amount="84.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-13" DueDate="2025-01-13" Number="0000000008" Reference="" OptionalReference="" Term="Покупка монтажно лепило" Vies="1" ViesMonth="2025-01-13">
+      <Document Date="2025-01-13" Number="2000225603" DocumentType="1" />
+      <Company Name="ЕЛ ЕНЕРДЖИ 03 ЕООД" Bulstat="131107147" VatNumber="BG131107147">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="21.900000" />
+        <AccountingDetail AccountNumber="601/2" Direction="Debit" VatTerm="2" Amount="18.250000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Debit" VatTerm="2" Amount="3.650000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-13" Number="0000000009" Reference="" OptionalReference="" Term="Разплащане по документ" Vies="1" ViesMonth="2025-01-13">
+      <Document Date="2025-01-13" Number="0000000004" DocumentType="9" />
+      <Company Name="ЕЛ ЕНЕРДЖИ 03 ЕООД" Bulstat="131107147" VatNumber="BG131107147">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="21.900000" />
+        <AccountingDetail AccountNumber="422" Direction="Credit" VatTerm="1" Amount="21.900000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-02" DueDate="2025-01-02" Number="0000000010" Reference="" OptionalReference="" Term="Покупка канц. м-ли" Vies="1" ViesMonth="2025-01-02">
+      <Document Date="2025-01-02" Number="0000002681" DocumentType="1" />
+      <Company Name="Анико Трейд ЕООД" Bulstat="203364922" VatNumber="BG203364922">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="24.700000" />
+        <AccountingDetail AccountNumber="601/6" Direction="Debit" VatTerm="2" Amount="20.580000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Debit" VatTerm="2" Amount="4.120000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-08" DueDate="2025-01-08" Number="0000000011" Reference="" OptionalReference="" Term="Покупка тел. услуги" Vies="1" ViesMonth="2025-01-08">
+      <Document Date="2025-01-08" Number="0085156262" DocumentType="1" />
+      <Company Name="Виваком България ЕАД" Bulstat="831642181" VatNumber="BG831642181">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="58.980000" />
+        <AccountingDetail AccountNumber="602/4" Direction="Debit" VatTerm="2" Amount="49.150000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Debit" VatTerm="2" Amount="9.830000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-03" DueDate="2025-01-03" Number="0000000013" Reference="" OptionalReference="" Term="Покупка счетоводни услуги" Vies="1" ViesMonth="2025-01-03">
+      <Document Date="2025-01-03" Number="0000000347" DocumentType="1" />
+      <Company Name="РАЙТ ШИФТ ЕООД" Bulstat="201514451">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="602/3" Direction="Debit" VatTerm="3" Amount="230.000000" />
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="3" Amount="230.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-03" Number="0000000014" Reference="" OptionalReference="" Term="б.такса" Vies="1" ViesMonth="2025-01-03">
+      <Document Date="2025-01-03" Number="1" DocumentType="11" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="629" Direction="Debit" VatTerm="1" Amount="0.600000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="0.600000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-03" Number="0000000015" Reference="" OptionalReference="" Term="плащане" Vies="1" ViesMonth="2025-01-03">
+      <Document Date="2025-01-03" Number="1" DocumentType="11" />
+      <Company Name="РАЙТ ШИФТ ЕООД" Bulstat="201514451">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="230.000000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="230.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-03" Number="0000000016" Reference="" OptionalReference="" Term="плащане" Vies="1" ViesMonth="2025-01-03">
+      <Document Date="2025-01-03" Number="1" DocumentType="11" />
+      <Company Name="Анико Трейд ЕООД" Bulstat="203364922" VatNumber="BG203364922">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="27.400000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="27.400000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-06" Number="0000000017" Reference="" OptionalReference="" Term="захранване" Vies="1" ViesMonth="2025-01-06">
+      <Document Date="2025-01-06" Number="1" DocumentType="11" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="801.400000" />
+        <AccountingDetail AccountNumber="501" Direction="Debit" VatTerm="1" Amount="800.000000" />
+        <AccountingDetail AccountNumber="629" Direction="Debit" VatTerm="1" Amount="1.400000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-08" Number="0000000018" Reference="" OptionalReference="" Term="ддс" Vies="1" ViesMonth="2025-01-08">
+      <Document Date="2025-01-08" Number="1" DocumentType="11" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="453/9" Direction="Debit" VatTerm="1" Amount="1084.810000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="1084.810000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-20" DueDate="2025-01-20" Number="0000000019" Reference="" OptionalReference="" Term="Продажба транспорт и монтаж" Vies="1" ViesMonth="2025-01-20">
+      <Document Date="2025-01-20" Number="0000000003" DocumentType="1" />
+      <Company Name="СОЛИД ДОРС ЦЕНТЪР ЕООД" Bulstat="202445780" VatNumber="BG202445780">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="411" Direction="Debit" VatTerm="7" Amount="2075.000000" />
+        <AccountingDetail AccountNumber="703/1" Direction="Credit" VatTerm="7" Amount="288.200000" />
+        <AccountingDetail AccountNumber="703/2" Direction="Credit" VatTerm="7" Amount="1440.970000" />
+        <AccountingDetail AccountNumber="453/2" Direction="Credit" VatTerm="7" Amount="345.830000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-20" Number="0000000020" Reference="" OptionalReference="" Term="плащане" Vies="1" ViesMonth="2025-01-20">
+      <Document Date="2025-01-20" Number="1" DocumentType="11" />
+      <Company Name="СОЛИД ДОРС ЦЕНТЪР ЕООД" Bulstat="202445780" VatNumber="BG202445780">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="503/1" Direction="Debit" VatTerm="1" Amount="2075.000000" />
+        <AccountingDetail AccountNumber="411" Direction="Credit" VatTerm="1" Amount="2075.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-20" Number="0000000021" Reference="" OptionalReference="" Term="плащане" Vies="1" ViesMonth="2025-01-20">
+      <Document Date="2025-01-20" Number="1" DocumentType="11" />
+      <Company Name="Виваком България ЕАД" Bulstat="831642181" VatNumber="BG831642181">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="58.980000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="58.980000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-20" Number="0000000022" Reference="" OptionalReference="" Term="захранване" Vies="1" ViesMonth="2025-01-20">
+      <Document Date="2025-01-20" Number="1" DocumentType="11" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="501" Direction="Debit" VatTerm="1" Amount="800.000000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="800.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-21" Number="0000000023" Reference="" OptionalReference="" Term="б.такса" Vies="1" ViesMonth="2025-01-21">
+      <Document Date="2025-01-21" Number="1" DocumentType="11" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="629" Direction="Debit" VatTerm="1" Amount="1.400000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="1.400000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-23" Number="0000000024" Reference="" OptionalReference="" Term="б.такса" Vies="1" ViesMonth="2025-01-23">
+      <Document Date="2025-01-23" Number="1" DocumentType="11" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="629" Direction="Debit" VatTerm="1" Amount="1.960000" />
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="1.960000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000025" Reference="" OptionalReference="" Term="захранване" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="1" DocumentType="11" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="503/1" Direction="Credit" VatTerm="1" Amount="525.000000" />
+        <AccountingDetail AccountNumber="501" Direction="Debit" VatTerm="1" Amount="500.000000" />
+        <AccountingDetail AccountNumber="629" Direction="Debit" VatTerm="1" Amount="25.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-17" Number="0000000026" Reference="" OptionalReference="" Term="плащане" Vies="1" ViesMonth="2025-01-17">
+      <Document Date="2025-01-17" Number="0000000006" DocumentType="9" />
+      <Company Name="ЕЛ ЕНЕРДЖИ 03 ЕООД" Bulstat="131107147" VatNumber="BG131107147">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="31.140000" />
+        <AccountingDetail AccountNumber="501" Direction="Credit" VatTerm="1" Amount="31.140000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" DueDate="2025-01-31" Number="0000000027" Reference="" OptionalReference="" Term="Покупка курс ПТП" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="2200001924" DocumentType="1" />
+      <Company Name="Сдружение &quot;Български Червен кръст&quot;" Bulstat="000703415" VatNumber="BG000703415">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="602/1" Direction="Debit" VatTerm="2" Amount="90.000000" />
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="90.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000028" Reference="" OptionalReference="" Term="Разплащане по документ" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000007" DocumentType="9" />
+      <Company Name="Сдружение &quot;Български Червен кръст&quot;" Bulstat="000703415" VatNumber="BG000703415">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="90.000000" />
+        <AccountingDetail AccountNumber="501" Direction="Credit" VatTerm="1" Amount="90.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" DueDate="2025-01-31" Number="0000000029" Reference="" OptionalReference="" Term="Покупка ремонт бус" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000006240" DocumentType="1" />
+      <Company Name="ДМ-АУТО БГ ЕООД" Bulstat="205701434" VatNumber="BG205701434">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="2" Amount="403.000000" />
+        <AccountingDetail AccountNumber="602/2" Direction="Debit" VatTerm="2" Amount="335.830000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Debit" VatTerm="2" Amount="67.170000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000030" Reference="" OptionalReference="" Term="Разплащане по документ" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000008" DocumentType="9" />
+      <Company Name="ДМ-АУТО БГ ЕООД" Bulstat="205701434" VatNumber="BG205701434">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="401/1" Direction="Debit" VatTerm="1" Amount="403.000000" />
+        <AccountingDetail AccountNumber="501" Direction="Credit" VatTerm="1" Amount="403.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000031" Reference="" OptionalReference="" Term="Приключване на ДДС" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000002" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="453/2" Direction="Debit" VatTerm="1" Amount="141.210000" />
+        <AccountingDetail AccountNumber="453/1" Direction="Credit" VatTerm="1" Amount="141.210000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000032" Reference="" OptionalReference="" Term="Приключване на ДДС" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000003" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="453/2" Direction="Debit" VatTerm="1" Amount="204.620000" />
+        <AccountingDetail AccountNumber="453/9" Direction="Credit" VatTerm="1" Amount="204.620000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000070" Reference="Възнаграждения - ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000025" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="604/1" Direction="Debit" VatTerm="1" Amount="1272.820000" />
+        <AccountingDetail AccountNumber="421" Direction="Credit" VatTerm="1" Amount="1272.820000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000071" Reference="ДОО от осигурител - ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000026" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="605/1" Direction="Debit" VatTerm="1" Amount="139.000000" />
+        <AccountingDetail AccountNumber="461/1" Direction="Credit" VatTerm="1" Amount="139.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000072" Reference="ДОО от осигурен - ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000027" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="421" Direction="Debit" VatTerm="1" Amount="106.660000" />
+        <AccountingDetail AccountNumber="461/1" Direction="Credit" VatTerm="1" Amount="106.660000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000073" Reference="ДЗПО от осигурител -ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000028" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="605/2" Direction="Debit" VatTerm="1" Amount="35.640000" />
+        <AccountingDetail AccountNumber="461/2" Direction="Credit" VatTerm="1" Amount="35.640000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000074" Reference="ДЗПО от осигурен - ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000029" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="421" Direction="Debit" VatTerm="1" Amount="28.000000" />
+        <AccountingDetail AccountNumber="461/2" Direction="Credit" VatTerm="1" Amount="28.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000075" Reference="Фонд ТЗПБ" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000030" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="605/5" Direction="Debit" VatTerm="1" Amount="14.000000" />
+        <AccountingDetail AccountNumber="461/5" Direction="Credit" VatTerm="1" Amount="14.000000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000076" Reference="ЗО от осигурител - ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000031" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="605/6" Direction="Debit" VatTerm="1" Amount="61.100000" />
+        <AccountingDetail AccountNumber="463" Direction="Credit" VatTerm="1" Amount="61.100000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000077" Reference="ЗО от осигурен - ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000032" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="421" Direction="Debit" VatTerm="1" Amount="40.740000" />
+        <AccountingDetail AccountNumber="463" Direction="Credit" VatTerm="1" Amount="40.740000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000078" Reference="Данък по ЗДДФЛ - ТД и ДУК" OptionalReference="" Term="Заплати за м. 01.2025" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000033" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="421" Direction="Debit" VatTerm="1" Amount="109.740000" />
+        <AccountingDetail AccountNumber="454" Direction="Credit" VatTerm="1" Amount="109.740000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-03" Number="0000000101" Reference="" OptionalReference="" Term="подотчетни" Vies="1" ViesMonth="2025-01-03">
+      <Document Date="2025-01-03" Number="0000000006" DocumentType="10" />
+      <Company Name="Анико Трейд ЕООД" Bulstat="203364922" VatNumber="BG203364922">
+        <BankAccounts />
+      </Company>
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="422" Direction="Debit" VatTerm="1" Amount="2.700000" />
+        <AccountingDetail AccountNumber="401/1" Direction="Credit" VatTerm="1" Amount="2.700000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000163" Reference="" OptionalReference="" Term="заплати" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000027" DocumentType="9" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="421" Direction="Debit" VatTerm="1" Amount="987.680000" />
+        <AccountingDetail AccountNumber="501" Direction="Credit" VatTerm="1" Amount="987.680000" />
+      </AccountingDetails>
+    </Accounting>
+    <Accounting AccountingDate="2025-01-31" Number="0000000174" Reference="Ивеко, 35С18, СВ5421МХ; 0000000001" OptionalReference="" Term="Амортизация" Vies="1" ViesMonth="2025-01-31">
+      <Document Date="2025-01-31" Number="0000000010" DocumentType="10" />
+      <AccountingDetails>
+        <AccountingDetail AccountNumber="603" Direction="Debit" VatTerm="1" Amount="239.580000" />
+        <AccountingDetail AccountNumber="241/7" Direction="Credit" VatTerm="1" Amount="239.580000" />
+      </AccountingDetails>
+    </Accounting>
+  </Accountings>
+</TransferData>

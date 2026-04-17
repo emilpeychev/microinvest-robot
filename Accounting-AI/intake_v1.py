@@ -86,14 +86,15 @@ def detect_doc_type(file_name: str, ext: str) -> tuple[str, str]:
     if _has_keyword(lower, bank_keywords):
         return "bank", "name"
 
-    if _has_keyword(lower, invoice_keywords):
-        return "invoice", "name"
-
     if _has_keyword(lower, receipt_keywords):
         return "receipt", "name"
 
+    if _has_keyword(lower, invoice_keywords):
+        return "invoice", "name"
+
+    # Default: PDFs and images are most likely invoices
     if ext in {".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}:
-        return "other", "unrecognized-document"
+        return "invoice", "default-document"
 
     return "other", "unsupported-extension"
 

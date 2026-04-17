@@ -17,8 +17,8 @@ class IntakeFormatTests(unittest.TestCase):
     def test_extended_image_formats_are_accepted_as_document_like(self):
         for ext in [".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"]:
             doc_type, reason = intake.detect_doc_type(f"scanfile_abc{ext}", ext)
-            self.assertEqual(doc_type, "other")
-            self.assertEqual(reason, "unrecognized-document")
+            self.assertEqual(doc_type, "invoice")
+            self.assertEqual(reason, "default-document")
 
     def test_unsupported_extensions_still_go_to_unsupported(self):
         doc_type, reason = intake.detect_doc_type("random_file.docx", ".docx")
