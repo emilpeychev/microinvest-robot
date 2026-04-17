@@ -11,8 +11,12 @@ if (Test-Path $localPython) {
     $python = $localPython
 } elseif (Test-Path $parentPython) {
     $python = $parentPython
+} elseif (Get-Command py -ErrorAction SilentlyContinue) {
+    $python = "py"
+} elseif (Get-Command python -ErrorAction SilentlyContinue) {
+    $python = "python"
 } else {
-    Write-Error "Error / Грешка: Python venv not found. Checked / Проверени: $localPython ; $parentPython"
+    Write-Error "Error / Грешка: Python not found. Install Python 3.10+ from https://www.python.org/downloads/"
     exit 1
 }
 

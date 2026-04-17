@@ -11,10 +11,13 @@ if [[ -x "$LOCAL_VENV" ]]; then
   PYTHON_BIN="$LOCAL_VENV"
 elif [[ -x "$PARENT_VENV" ]]; then
   PYTHON_BIN="$PARENT_VENV"
+elif command -v python3 &>/dev/null; then
+  PYTHON_BIN="python3"
+elif command -v python &>/dev/null; then
+  PYTHON_BIN="python"
 else
-  echo "Error / Грешка: Python virtual environment not found. Checked / Проверени:" >&2
-  echo "  - $LOCAL_VENV" >&2
-  echo "  - $PARENT_VENV" >&2
+  echo "Error / Грешка: Python not found / Python не е намерен" >&2
+  echo "Install Python 3.10+ / Инсталирайте Python 3.10+" >&2
   exit 1
 fi
 
