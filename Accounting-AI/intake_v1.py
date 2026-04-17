@@ -58,12 +58,21 @@ def sanitize_token(value: str) -> str:
 def detect_doc_type(file_name: str, ext: str) -> tuple[str, str]:
     lower = file_name.lower()
 
+    # Use word-boundary matching to avoid false positives
+    # (e.g. "inv" matching "invest", "extract" matching unrelated words)
+    def _has_keyword(text: str, keywords: list[str]) -> bool:
+        for k in keywords:
+            pattern = r'(?:^|[\W_])' + re.escape(k) + r'(?:$|[\W_])'
+            if re.search(pattern, text):
+                return True
+        return False
+
     bank_keywords = [
-        "bank", "statement", "extract", "izvlechenie",
+        "bank", "statement", "izvlechenie",
         "banka", "bankovo", "konto", "iban", "transak",
     ]
     invoice_keywords = [
-        "invoice", "inv", "factura", "faktura", "fakt",
+        "invoice", "factura", "faktura",
         "bill", "danachna",
     ]
     receipt_keywords = [
@@ -74,13 +83,13 @@ def detect_doc_type(file_name: str, ext: str) -> tuple[str, str]:
     if ext in {".csv", ".xlsx", ".xls"}:
         return "bank", "extension"
 
-    if any(k in lower for k in bank_keywords):
+    if _has_keyword(lower, bank_keywords):
         return "bank", "name"
 
-    if any(k in lower for k in invoice_keywords):
+    if _has_keyword(lower, invoice_keywords):
         return "invoice", "name"
 
-    if any(k in lower for k in receipt_keywords):
+    if _has_keyword(lower, receipt_keywords):
         return "receipt", "name"
 
     if ext in {".pdf", ".jpg", ".jpeg", ".png", ".tif", ".tiff", ".bmp", ".webp"}:

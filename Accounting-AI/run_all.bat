@@ -11,8 +11,10 @@ set "PYTHON_EXE=..\.\.venv\Scripts\python.exe"
 if exist "%PYTHON_EXE%" goto python_ok
 
 REM No venv found — fall back to system Python
-where py >nul 2>&1 && (set "PYTHON_EXE=py" & goto python_ok)
-where python >nul 2>&1 && (set "PYTHON_EXE=python" & goto python_ok)
+where py >nul 2>&1
+if not errorlevel 1 set "PYTHON_EXE=py" & goto python_ok
+where python >nul 2>&1
+if not errorlevel 1 set "PYTHON_EXE=python" & goto python_ok
 
 echo ERROR / Грешка: Python not found / Python не е намерен
 echo Install Python 3.10+ from https://www.python.org/downloads/
