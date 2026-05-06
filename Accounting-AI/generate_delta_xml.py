@@ -244,14 +244,23 @@ def generate_xml(
                     break
                 except ValueError:
                     continue
+
+        # When the date is still ambiguous, use a clearly-fake placeholder
+        # (1900-01-01) so Delta Pro can still ingest the entry; the value
+        # stands out in the journal and must be corrected after manual review.
+        date_placeholder = False
         if not re.match(r"\d{4}-\d{2}-\d{2}$", invoice_date):
-            invoice_date = datetime.now().strftime("%Y-%m-%d")
+            invoice_date = "1900-01-01"
+            date_placeholder = True
 
         if not invoice_number:
             invoice_number = f"{current_number:010d}"
 
         expense_account, term_prefix = _match_expense(supplier, doc_type, account_map)
         term = f"{term_prefix} {supplier}" if supplier and supplier.lower() != "unknown" else term_prefix
+        if date_placeholder:
+            term = "[REVIEW DATE] " + term
+        reference = "REVIEW: date placeholder" if date_placeholder else ""
 
         # Determine VAT handling
         # Check if supplier has VatNumber pattern (starts with BG + digits)
@@ -288,7 +297,7 @@ def generate_xml(
             company_bulstat="",
             company_vat="",
             term=term,
-            reference="",
+            reference=reference,
             vat_term=vat_term,
             details=details,
         )

@@ -172,27 +172,68 @@ def parse_invoice_fields_from_text(text: str) -> dict[str, object]:
     normalized_text = _normalize_space(text)
 
     supplier_patterns = [
+        # "Doctor: NAME" or "Supplier: NAME" with colon/dash (strict)
         r"(?:Доставчик|Supplier)\s*[:\-]\s*([^\n\r|]{3,120})",
         r"(?:Издател|Продавач)\s*[:\-]\s*([^\n\r|]{3,120})",
+        # Loose: BG invoices often have "Клиент X     Доставчик Y" with spaces only
+        r"Доставчик\s+([^\n\r|]{3,120})",
+        # All-caps name followed by company suffix
         r"^(?:[A-ZА-Я][A-ZА-Я0-9\-\s\.,]{3,120})(?:\s+(?:ООД|ЕООД|АД|ЕТ|Ltd\.?|LLC))",
     ]
+    # Header/label words that indicate the regex captured a layout artifact
+    # rather than a real supplier name.
+    bad_supplier_words = {
+        "billed", "payment", "status", "account", "balance", "total", "due",
+        "subtotal", "vat", "invoice", "bill", "paid", "credit", "debit",
+        "amount", "tax", "сума", "плащане", "обща", "междинна",
+        # Column-header words from BG two-column layouts
+        "име", "получател", "клиент", "адрес", "ид.№", "мол", "еик/егн",
+    }
     for pattern in supplier_patterns:
         m = re.search(pattern, text, flags=re.IGNORECASE | re.MULTILINE)
         if m:
             supplier = _normalize_space(m.group(1) if m.lastindex else m.group(0))
+            # Trim at the next field label that often follows the supplier
+            # name on the same line (BG/EN invoices, two-column layouts).
+            supplier = re.split(
+                r"\s+(?:Град|Адрес|ЕИК|ЕГН|Ид\.?\s*№|МОЛ|IBAN|Банка|BIC|VAT|TIN|Tel\.?|Phone|Email)\b",
+                supplier,
+                maxsplit=1,
+                flags=re.IGNORECASE,
+            )[0]
             supplier = supplier.strip(" .,-")
-            if len(supplier) >= 3:
-                data["Supplier/Customer"] = supplier
-                break
+            if len(supplier) < 3 or len(supplier) > 80:
+                continue
+            tokens = {t.lower().strip(".,") for t in supplier.split()}
+            if tokens & bad_supplier_words:
+                continue
+            data["Supplier/Customer"] = supplier
+            break
 
+    # Words that may appear between "Фактура"/"Ф-ра" and the actual number
+    # (e.g. "Оригинал", "Копие", "Original", "Copy") — skip them when matching.
+    inv_skip_words = {
+        "оригинал", "копие", "дубликат",
+        "original", "copy", "duplicate",
+        "no", "n", "номер", "number",
+    }
     inv_no_patterns = [
-        r"(?:Фактура|Invoice)\s*(?:No\.?|N\.?|№)?\s*[:\-]?\s*([A-Za-zА-Яа-я0-9\-/]{3,40})",
-        r"(?:Номер|№)\s*[:\-]?\s*([A-Za-zА-Яа-я0-9\-/]{3,40})",
+        # Look ahead up to ~40 chars after the trigger and capture the first
+        # token that contains at least one digit. This skips qualifiers like
+        # "Оригинал"/"Копие" that appear before the real number.
+        r"(?:Фактура|Ф-ра|Invoice)[^\n\r]{0,40}?(?<![\w/-])([A-Za-zА-Яа-я0-9][A-Za-zА-Яа-я0-9\-/]{2,39})(?![\w/-])",
+        r"(?:Номер|№)\s*[:\-]?\s*(?<![\w/-])([A-Za-zА-Яа-я0-9][A-Za-zА-Яа-я0-9\-/]{2,39})(?![\w/-])",
     ]
     for pattern in inv_no_patterns:
-        m = re.search(pattern, normalized_text, flags=re.IGNORECASE)
-        if m:
-            data["Invoice Number"] = m.group(1).strip()
+        for m in re.finditer(pattern, normalized_text, flags=re.IGNORECASE):
+            candidate = m.group(1).strip()
+            if candidate.lower() in inv_skip_words:
+                continue
+            if not re.search(r"\d", candidate):
+                continue
+            data["Invoice Number"] = candidate
+            break
+        if data["Invoice Number"]:
             break
 
     date_patterns = [
@@ -450,7 +491,7 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
             "Net Amount": "",
             "VAT Amount": "",
             "Gross Amount": "",
-            "Currency": "BGN",
+            "Currency": "EUR",
             "Confidence Score": 0.30,
             "Notes": (
                 "Filename-only extraction / Извличане само по името на файла. "
@@ -515,13 +556,26 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
             found_amount = extracted.get("Gross Amount")
 
             if found_supplier:
-                counterparty = found_supplier
+                # Prefer filename counterparty when it's meaningful;
+                # only override with PDF text when filename has no useful name.
+                if not counterparty or counterparty.lower() in {"unknown", ""}:
+                    counterparty = found_supplier
             if found_inv_no:
                 invoice_number = found_inv_no
             if found_date:
                 invoice_date = found_date
             if isinstance(found_amount, float):
-                gross_amount = found_amount
+                # Sanity check: if filename had a parseable amount, the PDF amount
+                # should not be drastically smaller (likely a stray "1" or qty).
+                # Reject PDF amount when it's <10% of filename amount.
+                if isinstance(gross_amount, float) and gross_amount > 0 and \
+                        found_amount < gross_amount * 0.1:
+                    notes.append(
+                        f"PDF amount {found_amount} ignored (filename {gross_amount} preferred) / "
+                        f"PDF сума {found_amount} пренебрегната."
+                    )
+                else:
+                    gross_amount = found_amount
 
             notes.append(
                 f"PDF text parsed ({backend}) / Обработен PDF текст ({backend})."
@@ -533,6 +587,26 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
                 "PDF text extraction unavailable/empty / Липсва извличане на текст от PDF или текстът е празен."
             )
 
+    # Final ambiguity check: flag for review if date is still unknown after
+    # both filename and PDF parsing — Delta Pro accounting date would default
+    # to today, which is almost always wrong.
+    if not invoice_date:
+        mandatory_review = "Yes"
+        if "Date ambiguous" not in " ".join(notes):
+            notes.append(
+                "Date ambiguous / unresolved — manual review required / "
+                "Двусмислена/неустановена дата — нужна е ръчна проверка."
+            )
+
+    # Same for the gross amount: if neither filename nor PDF text yielded a
+    # usable positive number, the entry is incomplete and must be reviewed.
+    if not isinstance(gross_amount, (int, float)) or gross_amount <= 0:
+        mandatory_review = "Yes"
+        notes.append(
+            "Amount ambiguous / unresolved — manual review required / "
+            "Двусмислена/неустановена сума — нужна е ръчна проверка."
+        )
+
     return {
         "Client": client or client_default,
         "File Name": file_name,
@@ -543,7 +617,7 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
         "Net Amount": "",
         "VAT Amount": "",
         "Gross Amount": gross_amount,
-        "Currency": "BGN",
+        "Currency": "EUR",
         "Confidence Score": max(0.0, round(confidence, 2)),
         "Mandatory Review": mandatory_review,
         "Notes": source_note_prefix + " " + " ".join(notes).strip(),

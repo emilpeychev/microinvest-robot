@@ -68,8 +68,15 @@ def detect_doc_type(file_name: str, ext: str) -> tuple[str, str]:
         return False
 
     bank_keywords = [
-        "bank", "statement", "izvlechenie",
+        "bank", "statement", "statements", "izvlechenie",
         "banka", "bankovo", "konto", "iban", "transak",
+        "dvizheniya", "dvizhenie",
+        "извлечение", "движения", "сметка",
+    ]
+    customs_keywords = [
+        # Bulgarian customs declaration filenames usually start with H1_NNBG...
+        # or include MRN/EAD/ЕАД tokens.
+        "h1", "ead", "еад", "mrn", "митница", "митнич", "customs",
     ]
     invoice_keywords = [
         "invoice", "factura", "faktura",
@@ -86,6 +93,10 @@ def detect_doc_type(file_name: str, ext: str) -> tuple[str, str]:
 
     if _has_keyword(lower, bank_keywords):
         return "bank", "name"
+
+    if _has_keyword(lower, customs_keywords):
+        # Customs declarations need manual review (not invoice/bank/receipt).
+        return "other", "customs"
 
     if _has_keyword(lower, receipt_keywords):
         return "receipt", "name"
@@ -126,10 +137,31 @@ def detect_date(file_stem: str) -> str:
 
 def detect_amount(file_stem: str) -> str:
     # Accept common formats like 124.50 or 124,50 from filename text.
-    amount_match = re.search(r"(?<!\d)(\d{1,7}(?:[.,]\d{2}))(?!\d)", file_stem)
-    if not amount_match:
+    # Pick the LARGEST amount-like token to avoid false matches on date prefixes
+    # (e.g. "10.03 - 293.18 - LIAOCHENG" should yield 293.18, not 10.03).
+    # Also reject tokens that look like DD.MM dates (e.g. "11.03" in
+    # "11.03 - 10€ - SHOPIFY.pdf" is March 11, not 11.03 EUR).
+    matches = re.findall(r"(?<!\d)(\d{1,7}(?:[.,]\d{2}))(?!\d)", file_stem)
+    if not matches:
         return "Unknown"
-    return amount_match.group(1).replace(",", ".")
+
+    def _looks_like_date(tok: str) -> bool:
+        norm = tok.replace(",", ".")
+        try:
+            day_part, month_part = norm.split(".")
+        except ValueError:
+            return False
+        try:
+            day, month = int(day_part), int(month_part)
+        except ValueError:
+            return False
+        return 1 <= day <= 31 and 1 <= month <= 12
+
+    candidates = [m for m in matches if not _looks_like_date(m)]
+    if not candidates:
+        return "Unknown"
+    best = max(candidates, key=lambda v: float(v.replace(",", ".")))
+    return best.replace(",", ".")
 
 
 def detect_counterparty(file_stem: str, client_name: str = "") -> str:
@@ -253,7 +285,10 @@ def run(base_dir: Path, client_name: str, dry_run: bool = False) -> int:
     unsupported_dir.mkdir(parents=True, exist_ok=True)
     ensure_log_header(log_file)
 
-    files = [p for p in incoming_dir.iterdir() if p.is_file()]
+    files = [
+        p for p in incoming_dir.iterdir()
+        if p.is_file() and not p.name.startswith(".")
+    ]
     files.sort(key=lambda p: p.name.lower())
 
     if not files:
