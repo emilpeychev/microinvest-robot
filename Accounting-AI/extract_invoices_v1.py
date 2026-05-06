@@ -480,10 +480,13 @@ _NET_LABELS = [
 ]
 
 _AMOUNT_AFTER_LABEL_RE = (
+    # Reject when the label is followed by an identifier marker (№, No, #, Nr).
+    r"(?!\s*(?:№|No\.?|N\u00b0|Nr\.?|#|ID|VAT|TIN|EIK|БУЛСТАТ|БГ|BG)\b)"
     r"\s*[:\-]?\s*"
     r"(?:[A-ZА-Я$€£¥₩元]{0,4}\s*)?"
     r"([0-9][0-9 \u00a0,.\u2009]*[0-9])"
-    r"\s*(?:%|\.|лв\.?|BGN|EUR|€|USD|US\$|\$|GBP|£|RMB|元|CNY|KRW|₩|JPY|¥)?"
+    # Disallow a trailing % so VAT-rate ("ДДС 20%") isn't captured as money.
+    r"\s*(?!%)(?:\.|лв\.?|BGN|EUR|€|USD|US\$|\$|GBP|£|RMB|元|CNY|KRW|₩|JPY|¥)?"
 )
 
 
@@ -493,7 +496,12 @@ def _label_matches(text: str, labels: list[str]):
         re.IGNORECASE | re.UNICODE,
     )
     for m in pattern.finditer(text):
-        amt = _parse_money(m.group(1))
+        raw = m.group(1)
+        # Reject ID-like tokens: 8+ consecutive digits with no decimal sep.
+        digits_only = re.sub(r"[^0-9]", "", raw)
+        if len(digits_only) >= 8 and "," not in raw and "." not in raw:
+            continue
+        amt = _parse_money(raw)
         if amt is not None and amt > 0:
             yield (m.start(), amt, m.group(0))
 
@@ -501,14 +509,11 @@ def _label_matches(text: str, labels: list[str]):
 def _choose_gross_amount(text: str) -> tuple[float | None, float | None, float | None]:
     """Return (gross, vat, net) — any may be None. Sanity-check net+vat≈gross.
 
-    The "best" gross is picked by these rules, in order:
-    - the LARGEST amount appearing right after a gross-total label
-      (intentional: invoices commonly repeat the total in BGN and EUR — we
-      keep the larger because BGN > EUR for the same row in BG invoices,
-      but the reverse holds for non-BG invoices; further refinement uses
-      currency hints downstream),
-    - else the largest amount near a VAT label + net label (compute total),
-    - else None.
+    Picks the largest gross-labelled amount and the largest VAT/net amount.
+    Then drops VAT/net values that are inconsistent with the chosen gross
+    (e.g. vat > gross, or net + vat differs from gross by more than 5%):
+    these are almost always mis-labelled identifiers or the VAT *rate*
+    rather than VAT amount.
     """
     gross_candidates = list(_label_matches(text, _GROSS_LABELS))
     vat_candidates = list(_label_matches(text, _VAT_LABELS))
@@ -520,6 +525,22 @@ def _choose_gross_amount(text: str) -> tuple[float | None, float | None, float |
 
     if gross is None and net is not None and vat is not None:
         gross = round(net + vat, 2)
+
+    # Coherence checks against the chosen gross.
+    if gross is not None:
+        if vat is not None and vat >= gross:
+            vat = None
+        if net is not None and net > gross:
+            net = None
+        # If both net and vat exist, the sum must be close to gross.
+        if net is not None and vat is not None:
+            if abs(net + vat - gross) > max(0.05 * gross, 0.05):
+                # Try to keep net (more reliable) and recompute vat.
+                if abs(net - gross) < 0.5 * gross:
+                    vat = round(gross - net, 2) if gross > net else None
+                else:
+                    net = None
+                    vat = None
 
     return gross, vat, net
 
