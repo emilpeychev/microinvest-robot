@@ -132,7 +132,7 @@ def detect_amount(file_stem: str) -> str:
     return amount_match.group(1).replace(",", ".")
 
 
-def detect_counterparty(file_stem: str) -> str:
+def detect_counterparty(file_stem: str, client_name: str = "") -> str:
     # Heuristic: choose the first alphabetic token with len >= 3.
     generic_words = {
         "invoice",
@@ -146,6 +146,10 @@ def detect_counterparty(file_stem: str) -> str:
         "scan",
         "document",
         "other",
+        # Pipeline placeholders that may appear in already-renamed files
+        "client",
+        "unknown",
+        "unknowndate",
         # Bulgarian document-type words that are not counterparty names
         "касов",
         "бон",
@@ -156,6 +160,12 @@ def detect_counterparty(file_stem: str) -> str:
         "фактура",
         "ф-ра",
     }
+    # Also skip the client name itself and any of its underscore-separated parts
+    if client_name:
+        generic_words.add(client_name.lower())
+        for part in re.split(r"[_\-.\s]+", client_name):
+            if part:
+                generic_words.add(part.lower())
     for token in re.split(r"[_\-.\s]+", file_stem):
         token_lower = token.lower()
         if token_lower in generic_words:
@@ -202,7 +212,7 @@ def process_file(file_path: Path, client_name: str, processed_dir: Path,
 
     date_str = detect_date(file_path.stem)
     amount = detect_amount(file_path.stem)
-    counterparty = detect_counterparty(file_path.stem)
+    counterparty = detect_counterparty(file_path.stem, client_name)
     target_name = build_target_name(client_name, date_str, doc_type, counterparty, amount, ext)
 
     if doc_type in {"invoice", "receipt", "bank"}:
