@@ -112,5 +112,91 @@ class ToIsoDateTests(unittest.TestCase):
         self.assertEqual(extract._to_iso_date("not-a-date"), "")
 
 
+class ChooseInvoiceDateMultiLocaleTests(unittest.TestCase):
+    """Tests for the multi-locale issue-date scorer."""
+
+    def test_microinvest_due_date_suppressed(self):
+        text = (
+            "Microinvest Invoice Pro\n"
+            "Номер: 0000000809\n"
+            "Дата: 17.03.2026\n"
+            "...\n"
+            "Дата на падеж: 06.03.2026\n"
+        )
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-17")
+
+    def test_edocs_number_slash_date(self):
+        text = (
+            "Фактура ОРИГИНАЛ\n"
+            "№ 0000000058 / 10.03.2026\n"
+            "www.e-Docs.bg\n"
+        )
+        result = extract.parse_invoice_fields_from_text(text)
+        self.assertEqual(result["Invoice Number"], "0000000058")
+        self.assertEqual(result["Invoice Date"], "2026-03-10")
+
+    def test_shopify_mar_9(self):
+        text = "Bill #INV-100\nDate Mar 9, 2026\nBill paid Mar 9, 2026\nTotal $29.00\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-09")
+
+    def test_suihe_27th_feb(self):
+        text = "INVOICE\nDate: 27th Feb.,2026\nTotal: 100.00 USD\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-02-27")
+
+    def test_liaocheng_march_25(self):
+        text = "INVOICE\nDATE: MARCH 25, 2026\nTotal 50.00\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-25")
+
+    def test_german_rechnungsdatum(self):
+        text = (
+            "Rechnung Nr. 12345\n"
+            "Rechnungsdatum: 02.03.2026\n"
+            "Fälligkeit: 16.03.2026\n"
+        )
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-02")
+
+    def test_chinese_cjk(self):
+        text = "发票号: 12345\n开票日期：2026年3月2日\n到期日：2026年3月16日\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-02")
+
+    def test_korean_cjk(self):
+        text = "Invoice No 1\n발행일: 2026년 3월 2일\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-02")
+
+    def test_eastern_arabic_digits(self):
+        text = "Invoice\nDate: ٢٠٢٦/٠٣/٠٢\nTotal 100\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-02")
+
+    def test_unambiguous_us_format(self):
+        # Second number > 12 means MM/DD; first cannot be a day.
+        text = "Date: 07/15/2026\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-07-15")
+
+    def test_eu_default_when_first_above_12(self):
+        # First > 12 means it MUST be the day → DMY.
+        text = "Date: 15.03.2026\n"
+        self.assertEqual(extract._choose_invoice_date(text), "2026-03-15")
+
+    def test_empty_text(self):
+        self.assertEqual(extract._choose_invoice_date(""), "")
+
+
+class ChooseGrossAmountTests(unittest.TestCase):
+    def test_returns_largest_gross(self):
+        text = "Нетна стойност: 100.00\nДДС: 20.00\nОбщо за плащане: 120.00 лв.\n"
+        gross, vat, net = extract._choose_gross_amount(text)
+        self.assertEqual(gross, 120.0)
+        self.assertEqual(vat, 20.0)
+        self.assertEqual(net, 100.0)
+
+    def test_currency_sniff_eur(self):
+        text = "Total due: 89.99 EUR\n"
+        self.assertEqual(extract._sniff_currency(text, default=""), "EUR")
+
+    def test_currency_sniff_usd(self):
+        text = "TOTAL: $123.45\n"
+        self.assertEqual(extract._sniff_currency(text, default=""), "USD")
+
+
 if __name__ == "__main__":
     unittest.main()

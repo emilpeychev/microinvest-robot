@@ -22,3 +22,9 @@ Thumbs.db
 
 # Bundle (regeneratable)
 MVP_FULL_COPYABLE.md
+
+# SQLite pattern store (regenerated from Rules/*.json seeds)
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm

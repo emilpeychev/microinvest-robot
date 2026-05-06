@@ -1,0 +1,23 @@
+[
+    {
+        "folder": "Client_A",
+        "legal_name": "Айс Блинг ЕООД",
+        "eik": "206818376",
+        "vat_id": "BG206818376",
+        "aliases": [
+            "Ice Bling Ltd",
+            "Ice Bling Ltd.",
+            "АЙС БЛИНГ ЕООД",
+            "Айс Блинг",
+            "ulitsa Knyaginya Tamara 11",
+            "Knyaginya Tamara street N11"
+        ]
+    },
+    {
+        "folder": "Client_B",
+        "legal_name": "PLACEHOLDER — fill with legal name",
+        "eik": null,
+        "vat_id": null,
+        "aliases": []
+    }
+]

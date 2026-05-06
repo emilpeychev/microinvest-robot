@@ -245,13 +245,25 @@ def generate_xml(
                 except ValueError:
                     continue
 
-        # When the date is still ambiguous, use a clearly-fake placeholder
-        # (1900-01-01) so Delta Pro can still ingest the entry; the value
-        # stands out in the journal and must be corrected after manual review.
+        # When the date is still ambiguous, use the locked placeholder
+        # "0000-00-00" so the row is unmistakable and Term carries the
+        # explicit REVIEW marker. These rows are written to a SEPARATE
+        # delta_import_REVIEW.xml file (see run()), never to the clean one.
         date_placeholder = False
         if not re.match(r"\d{4}-\d{2}-\d{2}$", invoice_date):
-            invoice_date = "1900-01-01"
+            invoice_date = "0000-00-00"
             date_placeholder = True
+
+        # Sanity check: when the row carries explicit Net + VAT values,
+        # require |net + vat - gross| <= 0.02. Otherwise drop the row
+        # (it is internally inconsistent and would corrupt the journal).
+        net_str = row.get("Net Amount", "").strip()
+        vat_str = row.get("VAT Amount", "").strip()
+        explicit_net = _parse_amount(net_str) if net_str else None
+        explicit_vat = _parse_amount(vat_str) if vat_str else None
+        if explicit_net is not None and explicit_vat is not None:
+            if abs(explicit_net + explicit_vat - gross) > 0.02:
+                continue
 
         if not invoice_number:
             invoice_number = f"{current_number:010d}"
@@ -259,8 +271,8 @@ def generate_xml(
         expense_account, term_prefix = _match_expense(supplier, doc_type, account_map)
         term = f"{term_prefix} {supplier}" if supplier and supplier.lower() != "unknown" else term_prefix
         if date_placeholder:
-            term = "[REVIEW DATE] " + term
-        reference = "REVIEW: date placeholder" if date_placeholder else ""
+            term = "REVIEW: missing date \u2014 " + term
+        reference = "REVIEW: missing date" if date_placeholder else ""
 
         # Determine VAT handling
         # Check if supplier has VatNumber pattern (starts with BG + digits)
@@ -352,6 +364,7 @@ def run(base_dir: Path, client_name: str) -> int:
 
     xlsx_path = review_dir / "extracted_invoices.xlsx"
     output_path = review_dir / "delta_import.xml"
+    review_output_path = review_dir / "delta_import_REVIEW.xml"
 
     if not xlsx_path.exists():
         raise FileNotFoundError(
@@ -366,21 +379,68 @@ def run(base_dir: Path, client_name: str) -> int:
         _write_log(log_file, f"{_now()} Delta import: no invoice rows found / Няма редове с фактури")
         return 0
 
-    root = generate_xml(rows, account_map)
-    accs_el = root.find("Accountings")
-    entry_count = len(accs_el) if accs_el is not None else 0
+    clean_rows, review_rows = partition_rows(rows)
 
-    if entry_count == 0:
+    clean_root = generate_xml(clean_rows, account_map)
+    accs_el = clean_root.find("Accountings")
+    clean_count = len(accs_el) if accs_el is not None else 0
+
+    review_count = 0
+    if review_rows:
+        review_root = generate_xml(
+            review_rows, account_map, start_number=clean_count + 1
+        )
+        review_accs = review_root.find("Accountings")
+        review_count = len(review_accs) if review_accs is not None else 0
+        if review_count > 0:
+            write_xml(review_root, review_output_path)
+        elif review_output_path.exists():
+            review_output_path.unlink()
+    elif review_output_path.exists():
+        review_output_path.unlink()
+
+    if clean_count == 0 and review_count == 0:
         _write_log(log_file, f"{_now()} Delta import: no valid entries generated / Няма генерирани валидни записи")
         return 0
 
-    write_xml(root, output_path)
+    if clean_count > 0:
+        write_xml(clean_root, output_path)
+    elif output_path.exists():
+        output_path.unlink()
+
     _write_log(
         log_file,
         f"{_now()} Delta Pro XML generated / Генериран XML за Delta Pro: "
-        f"{entry_count} entries/записа -> {output_path.name}",
+        f"{clean_count} clean -> {output_path.name}, {review_count} review -> {review_output_path.name}",
     )
-    return entry_count
+    return clean_count + review_count
+
+
+def partition_rows(
+    rows: list[dict[str, str]],
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Split extracted rows into (clean, review).
+
+    A row is REVIEW when its Invoice Date does not parse to ISO YYYY-MM-DD
+    via any of the accepted formats. Clean rows go into delta_import.xml;
+    review rows go into delta_import_REVIEW.xml with placeholder date and
+    a Term marker so they cannot be silently imported.
+    """
+    clean: list[dict[str, str]] = []
+    review: list[dict[str, str]] = []
+    for row in rows:
+        invoice_date = (row.get("Invoice Date") or "").strip()
+        is_iso = bool(re.match(r"\d{4}-\d{2}-\d{2}$", invoice_date))
+        if not is_iso:
+            for fmt in ("%d.%m.%Y", "%d-%m-%Y", "%d/%m/%Y"):
+                try:
+                    datetime.strptime(invoice_date, fmt)
+                    is_iso = True
+                    break
+                except ValueError:
+                    continue
+        (clean if is_iso else review).append(row)
+    return clean, review
 
 
 def _now() -> str:

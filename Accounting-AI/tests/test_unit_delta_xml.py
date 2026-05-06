@@ -425,6 +425,95 @@ def test_multiple_invoices(tmp_path):
     assert accs[1].get("Number") == "0000000002"
 
 
+def test_partition_rows_splits_by_iso_date():
+    rows = [
+        {"Document Type": "Invoice", "Invoice Date": "2026-03-02", "Gross Amount": "10"},
+        {"Document Type": "Invoice", "Invoice Date": "", "Gross Amount": "20"},
+        {"Document Type": "Invoice", "Invoice Date": "01.04.2026", "Gross Amount": "30"},
+        {"Document Type": "Invoice", "Invoice Date": "garbled", "Gross Amount": "40"},
+    ]
+    clean, review = gdx.partition_rows(rows)
+    assert len(clean) == 2
+    assert len(review) == 2
+
+
+def test_review_xml_uses_placeholder_and_marker(tmp_path):
+    """Rows with bad date go to delta_import_REVIEW.xml with 0000-00-00 + Term marker."""
+    base, review, rules = _setup_dirs(tmp_path)
+    test_rows = [
+        {
+            "Client": "TestClient", "File Name": "good.pdf", "Document Type": "Invoice",
+            "Supplier/Customer": "Shell", "Invoice Number": "G1",
+            "Invoice Date": "2025-04-01", "Net Amount": "", "VAT Amount": "",
+            "Gross Amount": "120", "Currency": "BGN", "Confidence Score": "0.9",
+            "Notes": "", "Mandatory Review": "No",
+        },
+        {
+            "Client": "TestClient", "File Name": "bad.pdf", "Document Type": "Invoice",
+            "Supplier/Customer": "Mystery", "Invoice Number": "B1",
+            "Invoice Date": "", "Net Amount": "", "VAT Amount": "",
+            "Gross Amount": "60", "Currency": "BGN", "Confidence Score": "0.5",
+            "Notes": "", "Mandatory Review": "Yes",
+        },
+    ]
+    _make_test_xlsx(review / "extracted_invoices.xlsx", test_rows)
+    count = gdx.run(base, "TestClient")
+    assert count == 2
+
+    clean_xml = review / "delta_import.xml"
+    review_xml = review / "delta_import_REVIEW.xml"
+    assert clean_xml.exists()
+    assert review_xml.exists()
+
+    ns = {"t": "urn:Transfer"}
+
+    # Clean file: exactly one entry, real date.
+    clean_root = ET.parse(clean_xml).getroot()
+    accs = clean_root.find("t:Accountings", ns) or clean_root.find("Accountings")
+    assert len(accs) == 1
+    assert accs[0].get("AccountingDate") == "2025-04-01"
+
+    # Review file: exactly one entry, placeholder + Term marker.
+    rev_root = ET.parse(review_xml).getroot()
+    rev_accs = rev_root.find("t:Accountings", ns) or rev_root.find("Accountings")
+    assert len(rev_accs) == 1
+    rev_acc = rev_accs[0]
+    assert rev_acc.get("AccountingDate") == "0000-00-00"
+    assert "REVIEW: missing date" in rev_acc.get("Term", "")
+    assert "REVIEW" in rev_acc.get("Reference", "")
+
+
+def test_review_xml_absent_when_no_bad_rows(tmp_path):
+    base, review, rules = _setup_dirs(tmp_path)
+    test_rows = [{
+        "Client": "TestClient", "File Name": "good.pdf", "Document Type": "Invoice",
+        "Supplier/Customer": "Shell", "Invoice Number": "G1",
+        "Invoice Date": "2025-04-01", "Net Amount": "", "VAT Amount": "",
+        "Gross Amount": "100", "Currency": "BGN", "Confidence Score": "0.9",
+        "Notes": "", "Mandatory Review": "No",
+    }]
+    _make_test_xlsx(review / "extracted_invoices.xlsx", test_rows)
+    gdx.run(base, "TestClient")
+    assert (review / "delta_import.xml").exists()
+    assert not (review / "delta_import_REVIEW.xml").exists()
+
+
+def test_inconsistent_net_vat_gross_dropped(tmp_path):
+    """Row with explicit Net+VAT mismatching Gross is dropped from output."""
+    base, review, rules = _setup_dirs(tmp_path)
+    test_rows = [{
+        "Client": "TestClient", "File Name": "bad-math.pdf", "Document Type": "Invoice",
+        "Supplier/Customer": "X", "Invoice Number": "1",
+        "Invoice Date": "2025-04-01",
+        "Net Amount": "10.00", "VAT Amount": "2.00", "Gross Amount": "999.00",
+        "Currency": "BGN", "Confidence Score": "0.9",
+        "Notes": "", "Mandatory Review": "No",
+    }]
+    _make_test_xlsx(review / "extracted_invoices.xlsx", test_rows)
+    count = gdx.run(base, "TestClient")
+    assert count == 0
+
+
 # ---------------------------------------------------------------------------
 # Run with pytest or standalone
 # ---------------------------------------------------------------------------
@@ -446,6 +535,7 @@ if __name__ == "__main__":
         test_xml_namespace,
         test_amount_format_six_decimals,
         test_number_zero_padded,
+        test_partition_rows_splits_by_iso_date,
     ]:
         try:
             fn()
@@ -455,7 +545,13 @@ if __name__ == "__main__":
             failures += 1
 
     # Integration tests (need tmp_path)
-    for fn in [test_read_xlsx_and_generate, test_multiple_invoices]:
+    for fn in [
+        test_read_xlsx_and_generate,
+        test_multiple_invoices,
+        test_review_xml_uses_placeholder_and_marker,
+        test_review_xml_absent_when_no_bad_rows,
+        test_inconsistent_net_vat_gross_dropped,
+    ]:
         try:
             with tempfile.TemporaryDirectory() as td:
                 fn(Path(td))

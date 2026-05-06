@@ -26,6 +26,14 @@ try:
 except Exception:
     PdfReader = None
 
+# Local module — best-effort SQLite-backed pattern store.
+try:
+    import sys as _sys
+    _sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import pattern_store  # type: ignore
+except Exception:
+    pattern_store = None  # type: ignore
+
 
 FILENAME_PATTERN = re.compile(
     r"^(?P<client>.+)_(?P<date>\d{4}-\d{2}-\d{2}|UNKNOWNDATE)_(?P<dtype>Invoice|Receipt|Bank|Other)_(?P<counterparty>[^_]+)_(?P<amount>[^_]+?)(?:_(?P<dup>\d+))?$",
@@ -95,6 +103,299 @@ def _normalize_space(value: str) -> str:
     return re.sub(r"\s+", " ", value).strip()
 
 
+# ---------------------------------------------------------------------------
+# Multi-locale date extraction
+# ---------------------------------------------------------------------------
+
+# Map Eastern Arabic (٠-٩) and Persian (۰-۹) digits to ASCII so subsequent
+# numeric regexes work uniformly. Other scripts (Devanagari, Bengali, etc.)
+# could be added the same way.
+_DIGIT_TRANSLATION = {
+    **{ord("٠") + i: ord("0") + i for i in range(10)},
+    **{ord("۰") + i: ord("0") + i for i in range(10)},
+}
+
+
+def _normalize_digits(text: str) -> str:
+    if not text:
+        return text
+    return text.translate(_DIGIT_TRANSLATION)
+
+
+# Month-name → 1..12 covering EN, BG, RU, DE, FR, ES, IT (full + short).
+# Lowercased, accents preserved as-is (regex matches case-insensitively).
+MONTHS: dict[str, int] = {}
+
+
+def _add_months(*pairs):
+    for tokens, num in pairs:
+        for tok in tokens:
+            MONTHS[tok.lower()] = num
+
+
+_add_months(
+    # English
+    (("january", "jan"), 1), (("february", "feb"), 2), (("march", "mar"), 3),
+    (("april", "apr"), 4), (("may",), 5), (("june", "jun"), 6),
+    (("july", "jul"), 7), (("august", "aug"), 8), (("september", "sep", "sept"), 9),
+    (("october", "oct"), 10), (("november", "nov"), 11), (("december", "dec"), 12),
+    # Bulgarian
+    (("януари", "ян"), 1), (("февруари", "фев"), 2), (("март", "мар"), 3),
+    (("април", "апр"), 4), (("май",), 5), (("юни",), 6),
+    (("юли",), 7), (("август", "авг"), 8), (("септември", "сеп"), 9),
+    (("октомври", "окт"), 10), (("ноември", "ное", "ноем"), 11), (("декември", "дек"), 12),
+    # Russian (genitive forms)
+    (("января", "янв"), 1), (("февраля",), 2), (("марта",), 3),
+    (("апреля",), 4), (("мая",), 5), (("июня",), 6),
+    (("июля",), 7), (("августа",), 8), (("сентября", "сент"), 9),
+    (("октября",), 10), (("ноября",), 11), (("декабря",), 12),
+    # German
+    (("januar", "jän"), 1), (("februar",), 2), (("märz", "marz"), 3),
+    (("mai",), 5), (("juni",), 6), (("juli",), 7),
+    (("oktober",), 10), (("dezember",), 12),
+    # French
+    (("janvier", "janv"), 1), (("février", "fevrier", "févr", "fevr"), 2), (("mars",), 3),
+    (("avril", "avr"), 4), (("juin",), 6), (("juillet", "juil"), 7),
+    (("août", "aout"), 8), (("septembre", "sept"), 9),
+    (("octobre",), 10), (("novembre", "nov"), 11), (("décembre", "decembre", "déc"), 12),
+    # Spanish
+    (("enero", "ene"), 1), (("febrero",), 2), (("marzo",), 3),
+    (("abril", "abr"), 4), (("mayo",), 5), (("junio",), 6),
+    (("julio",), 7), (("agosto", "ago"), 8), (("septiembre", "setiembre"), 9),
+    (("octubre",), 10), (("noviembre",), 11), (("diciembre",), 12),
+    # Italian
+    (("gennaio",), 1), (("febbraio",), 2), (("marzo",), 3),
+    (("aprile",), 4), (("maggio",), 5), (("giugno",), 6),
+    (("luglio",), 7), (("agosto",), 8), (("settembre",), 9),
+    (("ottobre",), 10), (("novembre",), 11), (("dicembre",), 12),
+)
+
+
+def _safe_iso(year: int, month: int, day: int) -> str:
+    """Validate (y, m, d) and return ISO string. Year guard: 2000..today+1."""
+    current_year = datetime.now().year
+    if year < 2000 or year > current_year + 1:
+        return ""
+    try:
+        return datetime(year, month, day).strftime("%Y-%m-%d")
+    except (ValueError, OverflowError):
+        return ""
+
+
+def _two_digit_year_to_full(yy: int) -> int:
+    current_year = datetime.now().year
+    candidate = 2000 + yy
+    if candidate <= current_year + 1:
+        return candidate
+    return 1900 + yy
+
+
+# Pattern fragments. We compile once and reuse.
+_NUM_DATE_RE = re.compile(
+    r"(?<!\d)(\d{1,4})[./\-](\d{1,2})[./\-](\d{1,4})(?!\d)"
+)
+_MONTH_NAME_TOKEN = "|".join(sorted(MONTHS.keys(), key=len, reverse=True))
+_MONTH_DMY_RE = re.compile(
+    rf"(?<!\w)(\d{{1,2}})(?:st|nd|rd|th)?\s*[\-\.\s,]*\s*({_MONTH_NAME_TOKEN})\s*[\-\.\s,]*\s*(\d{{2,4}})(?!\w)",
+    re.IGNORECASE | re.UNICODE,
+)
+_MONTH_MDY_RE = re.compile(
+    rf"(?<!\w)({_MONTH_NAME_TOKEN})\s*[\.\s]*\s*(\d{{1,2}})(?:st|nd|rd|th)?\s*[,.\s]*\s*(\d{{2,4}})(?!\w)",
+    re.IGNORECASE | re.UNICODE,
+)
+_CJK_CN_RE = re.compile(r"(\d{2,4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日")
+_CJK_KR_RE = re.compile(r"(\d{2,4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일")
+
+
+def _iter_date_matches(text: str):
+    """Yield (offset, iso_date, raw_match, kind) for every parseable date.
+
+    Numeric ambiguity policy: DD/MM (EU) by default; only flip to MM/DD when
+    the first number is > 12 (unambiguous US-style). A ``YYYY-MM-DD`` form
+    is detected by the year being 4 digits in the leading slot.
+    """
+    if not text:
+        return
+
+    # CJK first (unambiguous, won't be matched by numeric patterns).
+    for m in _CJK_CN_RE.finditer(text):
+        y, mo, d = (int(x) for x in m.groups())
+        if y < 100:
+            y = _two_digit_year_to_full(y)
+        iso = _safe_iso(y, mo, d)
+        if iso:
+            yield (m.start(), iso, m.group(0), "cjk")
+    for m in _CJK_KR_RE.finditer(text):
+        y, mo, d = (int(x) for x in m.groups())
+        if y < 100:
+            y = _two_digit_year_to_full(y)
+        iso = _safe_iso(y, mo, d)
+        if iso:
+            yield (m.start(), iso, m.group(0), "cjk")
+
+    # Month-name DMY ("2 March 2026", "27th Feb. 2026", "15 март 2026 г.").
+    for m in _MONTH_DMY_RE.finditer(text):
+        d_str, mon_tok, y_str = m.groups()
+        mo = MONTHS.get(mon_tok.lower())
+        if not mo:
+            continue
+        y = int(y_str)
+        if y < 100:
+            y = _two_digit_year_to_full(y)
+        iso = _safe_iso(y, mo, int(d_str))
+        if iso:
+            yield (m.start(), iso, m.group(0), "month_name")
+
+    # Month-name MDY ("March 2, 2026", "MARCH 25, 2026", "Mar 9, 2026").
+    for m in _MONTH_MDY_RE.finditer(text):
+        mon_tok, d_str, y_str = m.groups()
+        mo = MONTHS.get(mon_tok.lower())
+        if not mo:
+            continue
+        y = int(y_str)
+        if y < 100:
+            y = _two_digit_year_to_full(y)
+        iso = _safe_iso(y, mo, int(d_str))
+        if iso:
+            yield (m.start(), iso, m.group(0), "month_name")
+
+    # Numeric forms.
+    for m in _NUM_DATE_RE.finditer(text):
+        a, b, c = m.groups()
+        a_i, b_i, c_i = int(a), int(b), int(c)
+
+        # YYYY-MM-DD (4-digit leading year)
+        if len(a) == 4:
+            iso = _safe_iso(a_i, b_i, c_i)
+            if iso:
+                yield (m.start(), iso, m.group(0), "numeric_iso")
+                continue
+        # 4-digit trailing year
+        if len(c) == 4:
+            # Default DD/MM/YYYY (EU). Flip to MM/DD only when the SECOND
+            # number is > 12 — the only case where it cannot be a month.
+            if b_i > 12 and a_i <= 12:
+                iso = _safe_iso(c_i, a_i, b_i)  # MDY
+                kind = "numeric_mdy"
+            else:
+                iso = _safe_iso(c_i, b_i, a_i)  # DMY
+                kind = "numeric_dmy"
+            if iso:
+                yield (m.start(), iso, m.group(0), kind)
+                continue
+        # 2-digit trailing year
+        if len(c) == 2 and len(a) <= 2:
+            yy = _two_digit_year_to_full(c_i)
+            if b_i > 12 and a_i <= 12:
+                iso = _safe_iso(yy, a_i, b_i)
+                kind = "numeric_mdy"
+            else:
+                iso = _safe_iso(yy, b_i, a_i)
+                kind = "numeric_dmy"
+            if iso:
+                yield (m.start(), iso, m.group(0), kind)
+
+
+# Issue-date label patterns (multi-locale). Higher score for these.
+_ISSUE_LABELS = [
+    # Bulgarian
+    "дата на издаване", "дата на фактурата", "дата на издаването",
+    "дата на дан\\.?\\s*събитие", "дата на данъчно събитие",
+    "дата на изд",
+    # English
+    "invoice date", "issue date", "date of issue", "billing date",
+    # German
+    "rechnungsdatum", "rechnungs-?datum",
+    # French
+    "date de la facture", "date de facturation", "date d'émission",
+    # Spanish
+    "fecha de emisión", "fecha factura", "fecha de la factura", "fecha de emision",
+    # Italian
+    "data emissione", "data fattura",
+    # Russian
+    "дата выставления", "дата счёта", "дата счета",
+    # Chinese / Japanese / Korean
+    "开票日期", "发票日期", "請求日", "発行日", "발행일",
+]
+_ISSUE_LABEL_RE = re.compile(
+    r"(?i)\b(?:" + "|".join(_ISSUE_LABELS) + r")\b\s*[:\-]?\s*",
+)
+_GENERIC_DATE_LABEL_RE = re.compile(
+    r"(?i)\b(?:дата|date|datum|fecha|data|日期|날짜)\b\s*[:\-]?\s*",
+)
+_INVOICE_NUM_LABEL_RE = re.compile(
+    r"(?i)(?:№|no\.?|nr\.?|number|номер|фактура|invoice|rechnung|factura|发票号|fattura)",
+)
+_DUE_LABEL_RE = re.compile(
+    r"(?i)\b(?:падеж|срок\s+за\s+плащане|дата\s+на\s+падеж|due\s*date|payment\s*due|fälligkeit|faelligkeit|vencimiento|scadenza|date\s+limite|到期日|만기일)\b",
+)
+_PERIOD_LABEL_RE = re.compile(
+    r"(?i)\b(?:период|за\s+период|периода|дата\s+на\s+доставка|delivery\s*date|billing\s*period|period|leistungsdatum|leistungszeitraum|periodo|période)\b",
+)
+
+
+def _choose_invoice_date(text: str) -> str:
+    """Pick the best invoice-issue date from arbitrary text.
+
+    Returns "" when nothing matches plausibly; caller should then flag the
+    row for manual review.
+    """
+    if not text:
+        return ""
+    norm = _normalize_digits(text)
+    candidates = list(_iter_date_matches(norm))
+    if not candidates:
+        return ""
+
+    text_len = max(len(norm), 1)
+    # Pre-collect label offsets for proximity scoring.
+    issue_label_spans = [m.start() for m in _ISSUE_LABEL_RE.finditer(norm)]
+    generic_label_spans = [m.start() for m in _GENERIC_DATE_LABEL_RE.finditer(norm)]
+    inv_num_spans = [m.start() for m in _INVOICE_NUM_LABEL_RE.finditer(norm)]
+    due_spans = [m.start() for m in _DUE_LABEL_RE.finditer(norm)]
+    period_spans = [m.start() for m in _PERIOD_LABEL_RE.finditer(norm)]
+
+    def _near(offset: int, spans: list[int], window: int) -> bool:
+        # A label is "near" if it appears within `window` chars BEFORE the date.
+        for s in spans:
+            if 0 <= offset - s <= window:
+                return True
+        return False
+
+    best = None
+    best_score = float("-inf")
+    for offset, iso, raw, kind in candidates:
+        score = 0
+        if _near(offset, issue_label_spans, 60):
+            score += 100
+        if _near(offset, generic_label_spans, 30):
+            score += 60
+        if _near(offset, inv_num_spans, 80):
+            score += 40
+        if offset < text_len * 0.25:
+            score += 20
+        elif offset > text_len * 0.85:
+            score -= 20
+        if _near(offset, due_spans, 40):
+            score -= 80
+        if _near(offset, period_spans, 50):
+            score -= 40
+        # Tie-break: earlier offset slightly preferred.
+        score -= offset / max(text_len, 1) * 5
+        if score > best_score:
+            best_score = score
+            best = iso
+
+    # When no positive label cue was found anywhere in the document,
+    # fall back to the earliest plausible numeric/month-name match —
+    # better than blank for simple receipts with no labels.
+    if best_score < 0 and not issue_label_spans and not generic_label_spans:
+        candidates.sort(key=lambda c: c[0])
+        return candidates[0][1]
+    return best or ""
+
+
+# Keep _to_iso_date as a small back-compat helper used by tests.
 def _to_iso_date(date_value: str) -> str:
     date_value = date_value.strip()
     for fmt in ("%d.%m.%Y", "%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y"):
@@ -104,6 +405,10 @@ def _to_iso_date(date_value: str) -> str:
             continue
     return ""
 
+
+# ---------------------------------------------------------------------------
+# Money helpers
+# ---------------------------------------------------------------------------
 
 def _parse_money(value: str) -> float | None:
     cleaned = value.replace(" ", "").replace("\u00a0", "")
@@ -117,6 +422,106 @@ def _parse_money(value: str) -> float | None:
         return float(cleaned)
     except ValueError:
         return None
+
+
+# Currency sniff: which currency token (if any) is dominant in the text.
+_CURRENCY_TOKENS = [
+    ("BGN", re.compile(r"\bBGN\b|лв\.?", re.IGNORECASE)),
+    ("EUR", re.compile(r"\bEUR\b|€|евро", re.IGNORECASE)),
+    ("USD", re.compile(r"\bUSD\b|US\$|\$|US\s?\$", re.IGNORECASE)),
+    ("GBP", re.compile(r"\bGBP\b|£")),
+    ("CNY", re.compile(r"\bCNY\b|\bRMB\b|元|人民币")),
+    ("KRW", re.compile(r"\bKRW\b|₩")),
+    ("JPY", re.compile(r"\bJPY\b|¥|円")),
+]
+
+
+def _sniff_currency(text: str, default: str = "BGN") -> str:
+    counts: dict[str, int] = {}
+    for code, rx in _CURRENCY_TOKENS:
+        counts[code] = len(rx.findall(text))
+    best = max(counts.items(), key=lambda kv: kv[1])
+    return best[0] if best[1] > 0 else default
+
+
+# Multi-locale gross / VAT / net label patterns.
+# Each entry: (label_regex, capture_group_for_amount)
+_GROSS_LABELS = [
+    # Bulgarian
+    "общо\\s+за\\s+плащане", "сума\\s+за\\s+плащане", "крайна\\s+сума",
+    "сума\\s+за\\s+плащане", "общо",
+    # English
+    "total\\s+due", "grand\\s+total", "amount\\s+due", "total\\s+amount",
+    "total",
+    # German
+    "gesamtbetrag", "gesamtsumme", "rechnungsbetrag", "endbetrag",
+    "zu\\s+zahlen",
+    # French
+    "total\\s+ttc", "montant\\s+total", "à\\s+payer", "total\\s+à\\s+régler",
+    # Spanish
+    "importe\\s+total", "total\\s+a\\s+pagar", "total",
+    # Italian
+    "totale\\s+fattura", "totale", "importo\\s+totale",
+    # Russian
+    "итого\\s+к\\s+оплате", "итого", "всего",
+    # CJK
+    "合\\s*计", "总\\s*计", "총\\s*합계", "合計",
+]
+_VAT_LABELS = [
+    "ддс", "vat", "mwst", "iva", "tva", "ндс", "增值税", "부가세", "ust",
+]
+_NET_LABELS = [
+    "нетна(?:\\s+стойност)?", "данъчна\\s+основа",
+    "net\\s+amount", "subtotal", "net",
+    "netto", "nettobetrag",
+    "base\\s+imponible",
+    "imponibile",
+    "小\\s*计", "소\\s*계",
+]
+
+_AMOUNT_AFTER_LABEL_RE = (
+    r"\s*[:\-]?\s*"
+    r"(?:[A-ZА-Я$€£¥₩元]{0,4}\s*)?"
+    r"([0-9][0-9 \u00a0,.\u2009]*[0-9])"
+    r"\s*(?:%|\.|лв\.?|BGN|EUR|€|USD|US\$|\$|GBP|£|RMB|元|CNY|KRW|₩|JPY|¥)?"
+)
+
+
+def _label_matches(text: str, labels: list[str]):
+    pattern = re.compile(
+        r"(?i)\b(?:" + "|".join(labels) + r")\b" + _AMOUNT_AFTER_LABEL_RE,
+        re.IGNORECASE | re.UNICODE,
+    )
+    for m in pattern.finditer(text):
+        amt = _parse_money(m.group(1))
+        if amt is not None and amt > 0:
+            yield (m.start(), amt, m.group(0))
+
+
+def _choose_gross_amount(text: str) -> tuple[float | None, float | None, float | None]:
+    """Return (gross, vat, net) — any may be None. Sanity-check net+vat≈gross.
+
+    The "best" gross is picked by these rules, in order:
+    - the LARGEST amount appearing right after a gross-total label
+      (intentional: invoices commonly repeat the total in BGN and EUR — we
+      keep the larger because BGN > EUR for the same row in BG invoices,
+      but the reverse holds for non-BG invoices; further refinement uses
+      currency hints downstream),
+    - else the largest amount near a VAT label + net label (compute total),
+    - else None.
+    """
+    gross_candidates = list(_label_matches(text, _GROSS_LABELS))
+    vat_candidates = list(_label_matches(text, _VAT_LABELS))
+    net_candidates = list(_label_matches(text, _NET_LABELS))
+
+    gross = max((c[1] for c in gross_candidates), default=None)
+    vat = max((c[1] for c in vat_candidates), default=None)
+    net = max((c[1] for c in net_candidates), default=None)
+
+    if gross is None and net is not None and vat is not None:
+        gross = round(net + vat, 2)
+
+    return gross, vat, net
 
 
 def extract_pdf_text(file_path: Path) -> tuple[str, str]:
@@ -167,8 +572,15 @@ def parse_invoice_fields_from_text(text: str) -> dict[str, object]:
         "Invoice Number": "",
         "Invoice Date": "",
         "Gross Amount": None,
+        "VAT Amount": None,
+        "Net Amount": None,
+        "Currency": "",
     }
 
+    if not text:
+        return data
+
+    text = _normalize_digits(text)
     normalized_text = _normalize_space(text)
 
     supplier_patterns = [
@@ -218,6 +630,9 @@ def parse_invoice_fields_from_text(text: str) -> dict[str, object]:
         "no", "n", "номер", "number",
     }
     inv_no_patterns = [
+        # "№ 0000000058 / 10.03.2026" — invoice-number-and-date header
+        # (e.g. e-Docs.bg layout). Capture only the number part.
+        r"№\s*([0-9][\w/\-]{2,39})\s*[/\-]\s*\d{1,4}[./\-]\d{1,2}[./\-]\d{1,4}",
         # Look ahead up to ~40 chars after the trigger and capture the first
         # token that contains at least one digit. This skips qualifiers like
         # "Оригинал"/"Копие" that appear before the real number.
@@ -236,28 +651,23 @@ def parse_invoice_fields_from_text(text: str) -> dict[str, object]:
         if data["Invoice Number"]:
             break
 
-    date_patterns = [
-        r"(?:Дата|Date)\s*[:\-]?\s*(\d{2}[./-]\d{2}[./-]\d{4})",
-        r"(?:Фактура|Invoice).*?(\d{2}[./-]\d{2}[./-]\d{4})",
-    ]
-    for pattern in date_patterns:
-        m = re.search(pattern, normalized_text, flags=re.IGNORECASE)
-        if m:
-            iso = _to_iso_date(m.group(1).replace("/", "."))
-            if iso:
-                data["Invoice Date"] = iso
-                break
+    # Multi-locale date — uses the offset-aware scorer over RAW text (not
+    # the single-line normalised form) so top/bottom/proximity heuristics
+    # work as intended.
+    chosen_date = _choose_invoice_date(text)
+    if chosen_date:
+        data["Invoice Date"] = chosen_date
 
-    amount_patterns = [
-        r"(?:Общо\s+за\s+плащане|Сума\s+за\s+плащане|Крайна\s+сума|Общо|Total\s+due|Grand\s+total)\s*[:\-]?\s*([0-9\s.,]+)",
-        r"(?:Сума|Amount|Total)\s*[:\-]?\s*([0-9\s.,]+)\s*(?:лв\.?|BGN|EUR)?",
-    ]
-    for pattern in amount_patterns:
-        for m in re.finditer(pattern, normalized_text, flags=re.IGNORECASE):
-            parsed = _parse_money(m.group(1))
-            if parsed is not None and parsed > 0:
-                data["Gross Amount"] = round(parsed, 2)
-                return data
+    # Multi-locale gross / VAT / net.
+    gross, vat, net = _choose_gross_amount(text)
+    if gross is not None and gross > 0:
+        data["Gross Amount"] = round(gross, 2)
+    if vat is not None and vat > 0:
+        data["VAT Amount"] = round(vat, 2)
+    if net is not None and net > 0:
+        data["Net Amount"] = round(net, 2)
+
+    data["Currency"] = _sniff_currency(text, default="")
 
     return data
 
@@ -509,6 +919,11 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
     invoice_date = "" if date_str == "UNKNOWNDATE" else date_str
     invoice_number = ""
     mandatory_review = "No"
+    extracted_vat: object = ""
+    extracted_net: object = ""
+    extracted_currency = ""
+    matched_class_id: int | None = None
+    matched_class_score = 0
     source_note_prefix = "Filename-only extraction / Извличане само по името на файла."
     notes: list[str] = []
     if dtype == "Receipt":
@@ -550,10 +965,51 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
         pdf_text, backend = extract_pdf_text(file_path)
         if pdf_text:
             extracted = parse_invoice_fields_from_text(pdf_text)
+
+            # Best-effort: ask the SQLite pattern store for a class-specific
+            # extraction, then merge — class patterns win where they fire,
+            # generic regexes fill the rest.
+            class_overrides: dict[str, str] = {}
+            client_record: dict | None = None
+            try:
+                if pattern_store is not None:
+                    rules_dir = file_path.parents[3] / "Rules"
+                    db_path = rules_dir / "patterns.sqlite"
+                    if not db_path.exists():
+                        try:
+                            pattern_store.bootstrap(rules_dir)
+                        except Exception:
+                            pass
+                    if db_path.exists():
+                        client_record = pattern_store.get_client(db_path, client or client_default)
+                        matched_class_id, matched_class_score = pattern_store.match_class(db_path, pdf_text)
+                        if matched_class_id is not None:
+                            class_overrides = pattern_store.apply_class_patterns(
+                                db_path, matched_class_id, pdf_text
+                            )
+            except Exception as exc:  # pragma: no cover — best-effort
+                notes.append(f"pattern_store unavailable: {exc}")
+
+            # Apply class-specific overrides where they exist; otherwise
+            # fall back to the generic extractor's results.
+            cls_date = (class_overrides.get("date") or "").strip()
+            cls_iso = _to_iso_date(cls_date) if cls_date else ""
+            if cls_iso:
+                extracted["Invoice Date"] = cls_iso
+            cls_number = (class_overrides.get("number") or "").strip()
+            if cls_number:
+                extracted["Invoice Number"] = cls_number
+            cls_supplier = (class_overrides.get("supplier") or "").strip()
+            if cls_supplier:
+                extracted["Supplier/Customer"] = cls_supplier
+
             found_supplier = str(extracted.get("Supplier/Customer") or "").strip()
             found_inv_no = str(extracted.get("Invoice Number") or "").strip()
             found_date = str(extracted.get("Invoice Date") or "").strip()
             found_amount = extracted.get("Gross Amount")
+            extracted_vat = extracted.get("VAT Amount") or ""
+            extracted_net = extracted.get("Net Amount") or ""
+            extracted_currency = str(extracted.get("Currency") or "").strip()
 
             if found_supplier:
                 # Prefer filename counterparty when it's meaningful;
@@ -577,11 +1033,61 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
                 else:
                     gross_amount = found_amount
 
+            # Buyer verification + counterparty memory (best-effort).
+            try:
+                if pattern_store is not None and client_record is not None:
+                    db_path = file_path.parents[3] / "Rules" / "patterns.sqlite"
+                    verdict = pattern_store.verify_buyer(
+                        db_path, client or client_default, pdf_text
+                    )
+                    if verdict.get("mismatch_with") and not verdict.get("match"):
+                        mandatory_review = "Yes"
+                        notes.append(
+                            "Buyer block matches another client folder ("
+                            + ",".join(verdict["mismatch_with"])
+                            + ") — possible misrouting / Възможно грешно насочване."
+                        )
+                    cp = pattern_store.match_counterparty(
+                        db_path, client_record["id"], supplier_name=found_supplier
+                    )
+                    if cp and cp.get("suggested_account"):
+                        notes.append(
+                            f"Suggested account: {cp['suggested_account']} (seen {cp['seen_count']}x)"
+                        )
+                    elif found_supplier:
+                        pattern_store.upsert_counterparty(
+                            db_path, client_record["id"], found_supplier
+                        )
+            except Exception as exc:  # pragma: no cover — best-effort
+                notes.append(f"buyer-check skipped: {exc}")
+
+            if matched_class_id is not None:
+                notes.append(f"Class match #{matched_class_id} score={matched_class_score}")
+
             notes.append(
                 f"PDF text parsed ({backend}) / Обработен PDF текст ({backend})."
             )
             source_note_prefix = "Filename + PDF text extraction / Извличане по име на файл + PDF текст."
             confidence = min(0.98, confidence + 0.10)
+
+            # High-confidence learning hook (best-effort).
+            try:
+                if (
+                    pattern_store is not None
+                    and confidence >= pattern_store.LEARN_THRESHOLD
+                    and matched_class_id is None
+                ):
+                    db_path = file_path.parents[3] / "Rules" / "patterns.sqlite"
+                    pattern_store.learn_from(
+                        db_path,
+                        file_name=file_name,
+                        text=pdf_text,
+                        fields=extracted,
+                        confidence=confidence,
+                        matched_class_id=matched_class_id,
+                    )
+            except Exception:
+                pass
         else:
             notes.append(
                 "PDF text extraction unavailable/empty / Липсва извличане на текст от PDF или текстът е празен."
@@ -614,10 +1120,10 @@ def build_row_values(file_path: Path, client_default: str) -> dict[str, object]:
         "Supplier/Customer": counterparty,
         "Invoice Number": invoice_number,
         "Invoice Date": invoice_date,
-        "Net Amount": "",
-        "VAT Amount": "",
+        "Net Amount": extracted_net,
+        "VAT Amount": extracted_vat,
         "Gross Amount": gross_amount,
-        "Currency": "EUR",
+        "Currency": extracted_currency or "EUR",
         "Confidence Score": max(0.0, round(confidence, 2)),
         "Mandatory Review": mandatory_review,
         "Notes": source_note_prefix + " " + " ".join(notes).strip(),

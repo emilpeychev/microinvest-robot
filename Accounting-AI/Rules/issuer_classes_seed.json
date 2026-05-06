@@ -1,0 +1,130 @@
+[
+    {
+        "slug": "microinvest_bg_v1",
+        "display_name": "Microinvest Invoice Pro (BG)",
+        "language": "bg",
+        "country": "BG",
+        "fingerprint": {
+            "must_contain_any": [
+                "Microinvest Invoice Pro",
+                "microinvest.net"
+            ],
+            "boost_tokens": [
+                [
+                    "доставчик",
+                    10
+                ],
+                [
+                    "получател",
+                    10
+                ],
+                [
+                    "идент. №",
+                    10
+                ]
+            ]
+        },
+        "patterns": [
+            {
+                "field": "date",
+                "kind": "regex",
+                "pattern": "Дата:\\s*(\\d{2}[.\\-/]\\d{2}[.\\-/]\\d{4})",
+                "priority": 200
+            },
+            {
+                "field": "number",
+                "kind": "regex",
+                "pattern": "Номер:\\s*([0-9A-Za-z/\\-]{3,40})",
+                "priority": 200
+            },
+            {
+                "field": "supplier",
+                "kind": "regex",
+                "pattern": "Доставчик\\s+([^\\n\\r]{3,80})",
+                "priority": 100
+            }
+        ]
+    },
+    {
+        "slug": "edocs_bg_v1",
+        "display_name": "e-Docs.bg invoice",
+        "language": "bg",
+        "country": "BG",
+        "fingerprint": {
+            "must_contain_any": [
+                "e-Docs.bg",
+                "www.e-Docs.bg"
+            ],
+            "boost_tokens": [
+                [
+                    "клиент",
+                    10
+                ],
+                [
+                    "доставчик",
+                    10
+                ]
+            ]
+        },
+        "patterns": [
+            {
+                "field": "date",
+                "kind": "regex",
+                "pattern": "№\\s*\\S+\\s*/\\s*(\\d{2}[.\\-/]\\d{2}[.\\-/]\\d{4})",
+                "priority": 200
+            },
+            {
+                "field": "number",
+                "kind": "regex",
+                "pattern": "№\\s*([0-9A-Za-z]{4,20})\\s*/\\s*\\d{2}",
+                "priority": 200
+            }
+        ]
+    },
+    {
+        "slug": "shopify_v1",
+        "display_name": "Shopify subscription bill",
+        "language": "en",
+        "country": "IE",
+        "fingerprint": {
+            "must_contain_any": [
+                "Shopify International Limited",
+                "Shopify Help Center"
+            ],
+            "boost_tokens": [
+                [
+                    "bill #",
+                    10
+                ],
+                [
+                    "account billed",
+                    10
+                ]
+            ]
+        },
+        "patterns": [
+            {
+                "field": "number",
+                "kind": "regex",
+                "pattern": "Bill\\s*#\\s*([0-9A-Za-z\\-]{4,30})",
+                "priority": 200
+            }
+        ]
+    },
+    {
+        "slug": "generic_eu_invoice",
+        "display_name": "Generic EU invoice (fallback)",
+        "language": null,
+        "country": null,
+        "fingerprint": {
+            "must_contain_any": [
+                "Invoice No",
+                "Invoice Date",
+                "Rechnung",
+                "Factura",
+                "Fattura"
+            ]
+        },
+        "patterns": []
+    }
+]
